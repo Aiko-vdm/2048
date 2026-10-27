@@ -6,12 +6,17 @@ ASSUME cs:_TEXT,ds:FLAT,es:FLAT,fs:FLAT,gs:FLAT
 INCLUDE "keyb.inc" 
 INCLUDE "rand.inc"
 
+VMEMADR EQU 0A0000h	; video memory address  320x200 dus 6400 adresses verder eindigt ie
+SCRWIDTH EQU 320	; screen witdth
+SCRHEIGHT EQU 200	; screen height
+
 ; -------------------------------------------------------------------
 ; CODE
 ; -------------------------------------------------------------------
 CODESEG
+start:
 STRUC tile
-    icon resd 0
+    icon dd 0
     value db 0 
 ENDS tile        
 PROC setVideoMode
@@ -43,12 +48,31 @@ proc wait_VBLANK
 	ret 
 endp wait_VBLANK
 
+PROC fillBackground
+	ARG 	@@fillcolor:byte
+	USES 	eax, ecx, edi
+
+	mov	edi, VMEMADR
+	
+	mov al, [@@fillcolor]
+	mov ah, al				
+    mov cx, ax			
+	shl eax, 16				
+	mov ax, cx			
+
+	mov	ecx, SCRWIDTH*SCRHEIGHT/4
+	rep	stosd
+
+	ret
+ENDP fillBackground
+
 PROC drawGameState
     USES eax, ebx, ecx, edx
     mov ecx, size
     mov ebx, 0
     @@drawLoop:
     
+    CALL fillBackground, 12
     loop @@drawLoop
 
     ret
