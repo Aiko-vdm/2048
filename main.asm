@@ -10,14 +10,26 @@ INCLUDE "keyb.inc" "rand.inc"
 ; -------------------------------------------------------------------
 CODESEG
 
-start:
-     sti            
-     cld            
+start:         
+PROC setVideoMode
+	ARG 	@@VM:byte
+	USES 	eax
+
+	movzx ax,[@@VM]
+	int 10h
+
+	ret
+ENDP setVideoMode
 	
+PROC main
+	sti
+	cld
+
+	call setVideoMode, 13h
+    
     mov ax,4c00h 
     int 21h
-	
-
+ENDP main
 
 ; -------------------------------------------------------------------
 ; DATA
