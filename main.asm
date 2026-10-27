@@ -40,7 +40,18 @@ proc wait_VBLANK
 	
 	ret 
 endp wait_VBLANK
-	
+
+PROC drawGameState
+    USES eax, ebx, ecx, edx
+    mov ecx, size
+    mov ebx, 0
+    @@drawLoop:
+    
+    loop @@drawLoop
+
+    ret
+endp drawGameState
+
 PROC main
 	sti
 	cld
@@ -49,7 +60,7 @@ PROC main
     
     @@gameLoop:
     CALL wait_VBLANK, 1
-    ;CALL drawGameState
+    CALL drawGameState
     ;CALL handleInput
     ;CALL updateGameState
     ;CALL checkGameState
