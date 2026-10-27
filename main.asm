@@ -10,8 +10,10 @@ INCLUDE "rand.inc"
 ; CODE
 ; -------------------------------------------------------------------
 CODESEG
-
-start:         
+STRUC tile
+    icon resd 0
+    value db 0 
+ENDS tile        
 PROC setVideoMode
 	ARG 	@@VM:byte
 	USES 	eax
@@ -76,7 +78,7 @@ ENDP main
 ; -------------------------------------------------------------------
 DATASEG
 size equ 4
-board db size dup(size dup(0))
+board tile size dup(size dup(<0, 0>))
 
 ; -------------------------------------------------------------------
 ; STACK
