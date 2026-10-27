@@ -21,7 +21,7 @@ CODESEG
 start:
      sti            ; set The Interrupt Flag => enable interrupts
      cld            ; clear The Direction Flag
-	 
+	;test
 	; if else oefening
 	mov eax, 1 ; assign aan eax 1
 
