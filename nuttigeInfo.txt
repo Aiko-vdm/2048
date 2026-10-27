@@ -1,0 +1,16 @@
+     48h,
+4Bh, 50h, 4Dh,  keyboardcodes voor arrow inputs
+
+Left Arrow	0x25	37	Left Arrow key
+Up Arrow	0x26	38	Up Arrow key
+Right Arrow	0x27	39	Right Arrow key
+Down Arrow	0x28	40	Down Arrow key
+
+movzx ebx, [byte ptr offset keybscancodes + ecx - 1]	; get scancode
+mov bl, [offset __keyb_keyboardState + ebx]	; obtain corresponding key state
+[_keyb_rawScanCode] voor last pressed key
+
+.inc files zie asmbox
+
+rand gebruiken voor genereren van random positie voor nieuwe 2/ 4
+keyb voor keyboard in te lezen (keyb_keyboardstate)
