@@ -3,7 +3,8 @@ P386
 MODEL FLAT, C
 ASSUME cs:_TEXT,ds:FLAT,es:FLAT,fs:FLAT,gs:FLAT
 
-INCLUDE "keyb.inc" "rand.inc"
+INCLUDE "keyb.inc" 
+INCLUDE "rand.inc"
 
 ; -------------------------------------------------------------------
 ; CODE
