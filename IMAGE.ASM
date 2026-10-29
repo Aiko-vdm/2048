@@ -15,6 +15,8 @@ P386
 MODEL FLAT, C
 ASSUME cs:_TEXT,ds:FLAT,es:FLAT,fs:FLAT,gs:FLAT
 
+INCLUDE "image.inc"
+
 ; compile-time constants (with macros)
 VMEMADR EQU 0A0000h	; video memory address
 FULLPALLETESIZE EQU 768 ; bytes in palette
@@ -136,22 +138,6 @@ ENDP processFile
 
 ; -------------------------------------------------------------------
 
-PROC main
-	sti
-	cld
-	
-	push ds
-	pop	es
-	
-	call setVideoMode, 13h
-	
-	; read and apply image data
-	call processFile, offset image_file
-	waitForKeystroke	
-	call terminateProcess
-
-ENDP main
-
 ; -------------------------------------------------------------------
 DATASEG
 				
@@ -168,4 +154,4 @@ UDATASEG
 ; -------------------------------------------------------------------
 STACK 100h
 
-END main
+END
