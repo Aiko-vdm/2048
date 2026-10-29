@@ -52,14 +52,17 @@ PROC fillBackground
 	ARG 	@@fillcolor:byte
 	USES 	eax, ecx, edi
 
+	; Initialize video memory address.
 	mov	edi, VMEMADR
 	
-	mov al, [@@fillcolor]
-	mov ah, al				
-    mov cx, ax			
-	shl eax, 16				
-	mov ax, cx			
+	; copy color value across all bytes of eax
+	mov al, [@@fillcolor]	; ???B
+	mov ah, al				; ??BB
+	mov cx, ax			
+	shl eax, 16				; BB00
+	mov ax, cx				; BBBB
 
+	; Scan the whole video memory and assign the background colour.
 	mov	ecx, SCRWIDTH*SCRHEIGHT/4
 	rep	stosd
 
@@ -81,6 +84,8 @@ endp drawGameState
 PROC main
 	sti
 	cld
+	push ds
+	pop	es
 
 	call setVideoMode, 13h
     
