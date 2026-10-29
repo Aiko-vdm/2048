@@ -14,7 +14,7 @@ SCRHEIGHT EQU 200	; screen height
 ; CODE
 ; -------------------------------------------------------------------
 CODESEG
-start:
+
 STRUC tile
     icon dd 0
     value db 0 
@@ -109,4 +109,4 @@ board tile size dup(size dup(<0, 0>))
 ; -------------------------------------------------------------------
 STACK 100h
 
-END start
+END main
