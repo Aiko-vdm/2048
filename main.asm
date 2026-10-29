@@ -108,7 +108,25 @@ ENDP main
 DATASEG
 size equ 4
 board tile size dup(size dup(<0, 0>))
-
+2Cell_file db "2Cell.bin", 0
+4Cell_file db "4Cell.bin", 0
+8Cell_file db "8Cell.bin", 0
+16Cell_file db "16Cell.bin", 0
+32Cell_file db "32Cell.bin", 0
+64Cell_file db "64Cell.bin", 0
+128Cell_file db "128Cell.bin", 0
+256Cell_file db "256Cell.bin", 0
+512Cell_file db "512Cell.bin", 0
+1024Cell_file db "1024Cell.bin", 0
+2048Cell_file db "2048Cell.bin", 0
+8192Cell_file db "8192Cell.bin", 0
+16kCell_file db "16kCell.bin", 0
+32kCell_file db "32kCell.bin", 0
+65kCell_file db "65kCell.bin", 0
+131kCell_file db "131kCell.bin", 0
+Background_file db "Background.bin", 0
+EmptyCell_file db "EmptyCell.bin", 0
+FilledBackground_file db "FilledBackground.bin", 0
 ; -------------------------------------------------------------------
 ; STACK
 ; -------------------------------------------------------------------
