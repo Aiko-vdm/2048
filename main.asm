@@ -126,8 +126,8 @@ ThirteenCell_file db "16kCell.bin", 0
 FourteenCell_file db "32kCell.bin", 0
 FifteenCell_file db "65kCell.bin", 0
 SixteenCell_file db "131kCell.bin", 0
-Background_file db "Background.bin", 0
-EmptyCell_file db "EmptyCell.bin", 0
+Background_file db "Bg.bin", 0
+EmptyCell_file db "ECell.bin", 0
 FilledBackground_file db "assets/FBg.bin", 0
 ; -------------------------------------------------------------------
 ; STACK
