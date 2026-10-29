@@ -6,6 +6,7 @@ ASSUME cs:_TEXT,ds:FLAT,es:FLAT,fs:FLAT,gs:FLAT
 INCLUDE "keyb.inc" 
 INCLUDE "rand.inc"
 INCLUDE "image.inc"
+Include "spritedp.inc"
 
 VMEMADR EQU 0A0000h	; video memory address  320x200 dus 6400 adresses verder eindigt ie
 SCRWIDTH EQU 320	; screen witdth
