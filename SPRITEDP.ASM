@@ -171,11 +171,11 @@ ENDP fillBackground
 ;	
 ;	lea eax, [sprite+8];get memory location of first image data element in the sprite variable
 ;	call ReadFile, offset sprite_file, eax,DATASIZE ;Fill image data from file data
-;	call drawSprite, offset sprite, VMEMADR, 0,0;Draw sprite at (0,0)  ; locatieee!!!!!
+;	call drawSprite, offset sprite, VMEMADR, 0,0   ;Draw sprite at (0,0)  ; locatieee!!!!!
 ;	waitForKeystroke	
 ;	call terminateProcess
 ;
-E;NDP main
+;ENDP main
 
 ; -------------------------------------------------------------------
 DATASEG

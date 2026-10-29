@@ -11,6 +11,9 @@ Include "spritedp.inc"
 VMEMADR EQU 0A0000h	; video memory address  320x200 dus 6400 adresses verder eindigt ie
 SCRWIDTH EQU 320	; screen witdth
 SCRHEIGHT EQU 200	; screen height
+SPRITEWIDTH EQU 176
+SPRITEHEIGHT EQU 176
+DATASIZE EQU SPRITEWIDTH*SPRITEHEIGHT;bytes of data in file
 
 ; -------------------------------------------------------------------
 ; CODE
@@ -78,7 +81,8 @@ PROC drawGameState
     @@drawLoop:
     
     ;CALL fillBackground, 12
-	CALL processFile, offset FilledBackground_file
+	call ReadFile, offset FilledBackground_file, eax,DATASIZE
+	call drawSprite, offset BigDim, VMEMADR, 0,0
     loop @@drawLoop
 
     ret
@@ -130,6 +134,10 @@ SixteenCell_file db "assets/131kCell.bin", 0
 Background_file db "assets/Bg.bin", 0
 EmptyCell_file db "assets/ECell.bin", 0
 FilledBackground_file db "assets/FBg.bin", 0
+
+
+BigDim DD SCRWIDTH, SCRHEIGHT
+DB DATASIZE DUP(0)
 ; -------------------------------------------------------------------
 ; STACK
 ; -------------------------------------------------------------------

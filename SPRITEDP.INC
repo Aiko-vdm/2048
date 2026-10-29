@@ -3,4 +3,5 @@
 ;-------------------------------------------------------------------
 
 GLOBAL drawSprite:PROC
+GLOBAL ReadFile:PROC
 
