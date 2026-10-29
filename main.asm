@@ -110,24 +110,24 @@ ENDP main
 DATASEG
 size equ 4
 board tile size dup(size dup(<0, 0>))
-OneCell_file db "2Cell.bin", 0
-TwoCell_file db "4Cell.bin", 0
-ThreeCell_file db "8Cell.bin", 0
-FourCell_file db "16Cell.bin", 0
-FiveCell_file db "32Cell.bin", 0
-SixCell_file db "64Cell.bin", 0
-SevenCell_file db "128Cell.bin", 0
-EightCell_file db "256Cell.bin", 0
-NineCell_file db "512Cell.bin", 0
-TenCell_file db "1024Cell.bin", 0
-ElevenCell_file db "2048Cell.bin", 0
-TwelveCell_file db "8192Cell.bin", 0
-ThirteenCell_file db "16kCell.bin", 0
-FourteenCell_file db "32kCell.bin", 0
-FifteenCell_file db "65kCell.bin", 0
-SixteenCell_file db "131kCell.bin", 0
-Background_file db "Bg.bin", 0
-EmptyCell_file db "ECell.bin", 0
+OneCell_file db "assets/2Cell.bin", 0
+TwoCell_file db "assets/4Cell.bin", 0
+ThreeCell_file db "assets/8Cell.bin", 0
+FourCell_file db "assets/16Cell.bin", 0
+FiveCell_file db "assets/32Cell.bin", 0
+SixCell_file db "assets/64Cell.bin", 0
+SevenCell_file db "assets/128Cell.bin", 0
+EightCell_file db "assets/256Cell.bin", 0
+NineCell_file db "assets/512Cell.bin", 0
+TenCell_file db "assets/1024Cell.bin", 0
+ElevenCell_file db "assets/2048Cell.bin", 0
+TwelveCell_file db "assets/8192Cell.bin", 0
+ThirteenCell_file db "assets/16kCell.bin", 0
+FourteenCell_file db "assets/32kCell.bin", 0
+FifteenCell_file db "assets/65kCell.bin", 0
+SixteenCell_file db "assets/131kCell.bin", 0
+Background_file db "assets/Bg.bin", 0
+EmptyCell_file db "assets/ECell.bin", 0
 FilledBackground_file db "assets/FBg.bin", 0
 ; -------------------------------------------------------------------
 ; STACK
