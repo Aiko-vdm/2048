@@ -76,7 +76,7 @@ PROC drawGameState
     mov ebx, 0
     @@drawLoop:
     
-    CALL fillBackground, 12
+    ;CALL fillBackground, 12
 	CALL processFile, offset FilledBackground_file
     loop @@drawLoop
 
