@@ -18,6 +18,8 @@ CENTERY EQU (SCRHEIGHT-BIGSPRITEHEIGHT)/2
 SMALLSPRITEWIDTH EQU 32
 SMALLSPRITEHEIGHT EQU 32
 SMALLDATASIZE EQU SMALLSPRITEWIDTH*SMALLSPRITEHEIGHT
+DISTANCEBETWEENCELLS EQU 5
+BORDER EQU 16
 ; -------------------------------------------------------------------
 ; CODE
 ; -------------------------------------------------------------------
@@ -91,14 +93,10 @@ endp drawGameState
 
 PROC drawInit
     USES eax, ebx, ecx, edx
-    mov ecx, size
-    mov ebx, 0
-    @@drawLoop:
     
 	lea eax, [BigSprite + 8]
 	call ReadFile, offset FilledBackground_file, eax,BIGDATASIZE
 	call drawSprite, offset BigSprite, VMEMADR, CENTERX,CENTERY
-    loop @@drawLoop
 
     ret
 endp drawInit
@@ -106,14 +104,18 @@ endp drawInit
 PROC drawCell
 	ARG 	@@cell:dword, @@x:dword, @@y:dword
     USES eax, ebx, ecx, edx
-    mov ecx, size
-    mov ebx, 0
-    @@drawLoop:
-    
+
+	mov ebx, [@@x]
+	imul ebx, DISTANCEBETWEENCELLS+SMALLSPRITEWIDTH
+	add ebx, CENTERX + BORDER
+	
+	mov ecx, [@@y]
+	imul ecx, DISTANCEBETWEENCELLS+SMALLSPRITEHEIGHT
+	add ecx, CENTERY + BORDER
+
 	lea eax, [SmallSprite + 8]
 	call ReadFile,[@@cell], eax,SMALLDATASIZE
-	call drawSprite, offset SmallSprite, VMEMADR, [@@x],[@@y]
-    loop @@drawLoop
+	call drawSprite, offset SmallSprite, VMEMADR, ebx, ecx
 
     ret
 endp drawCell
