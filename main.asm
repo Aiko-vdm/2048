@@ -138,13 +138,13 @@ Proc SpawnTile
 	imul edx, SIZE tile
 	lea esi, [board + edx]
 	
-	cmp	[esi].tile.value, 0
+	cmp	[(tile ptr esi).value], 0
 	je	@@spawnTile
 	loop	@@spawn
 	
 	@@spawnTile:
-	mov	[esi].tile.value, 2  ;moet nog aangepast worden voor kans dat het 4 is
-	mov [esi].tile.icon, offset OneCell_file
+	mov	[(tile ptr esi).value], 2  ;moet nog aangepast worden voor kans dat het 4 is
+	mov [(tile ptr esi).icon], offset OneCell_file
 	ret
 Endp SpawnTile
 
