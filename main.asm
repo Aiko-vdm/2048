@@ -81,13 +81,24 @@ PROC drawGameState
     @@drawLoop:
     
     ;CALL fillBackground, 12
+    loop @@drawLoop
+
+    ret
+endp drawGameState
+
+PROC drawInit
+    USES eax, ebx, ecx, edx
+    mov ecx, size
+    mov ebx, 0
+    @@drawLoop:
+    
 	lea eax, [BigSprite + 8]
 	call ReadFile, offset FilledBackground_file, eax,BIGDATASIZE
 	call drawSprite, offset BigSprite, VMEMADR, CENTERX,CENTERY
     loop @@drawLoop
 
     ret
-endp drawGameState
+endp drawInit
 
 PROC main
 	sti
@@ -96,7 +107,7 @@ PROC main
 	pop	es
 
 	call setVideoMode, 13h
-    
+    call drawInit
     @@gameLoop:
     CALL wait_VBLANK, 1
     CALL drawGameState
