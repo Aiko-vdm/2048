@@ -5,15 +5,14 @@ ASSUME cs:_TEXT,ds:FLAT,es:FLAT,fs:FLAT,gs:FLAT
 
 INCLUDE "keyb.inc" 
 INCLUDE "rand.inc"
-INCLUDE "image.inc"
-Include "spritedp.inc"
+INCLUDE "spritedp.inc"
 
 VMEMADR EQU 0A0000h	; video memory address  320x200 dus 6400 adresses verder eindigt ie
 SCRWIDTH EQU 320	; screen witdth
 SCRHEIGHT EQU 200	; screen height
 SPRITEWIDTH EQU 176
 SPRITEHEIGHT EQU 176
-DATASIZE EQU SPRITEWIDTH*SPRITEHEIGHT
+SCREENSIZE EQU SCRWIDTH*SCRHEIGHT
 ; -------------------------------------------------------------------
 ; CODE
 ; -------------------------------------------------------------------
@@ -81,7 +80,7 @@ PROC drawGameState
     
     ;CALL fillBackground, 12
 	lea eax, [sprite + 8]
-	call ReadFile, offset FilledBackground_file, eax,DATASIZE
+	call ReadFile, offset FilledBackground_file, eax,SCREENSIZE
 	call drawSprite, offset BigDim, VMEMADR, 0,0
     loop @@drawLoop
 
@@ -137,7 +136,7 @@ FilledBackground_file db "assets/FBg.bin", 0
 
 sprite DD SPRITEWIDTH, SPRITEHEIGHT
 BigDim DD SCRWIDTH, SCRHEIGHT
-DB DATASIZE DUP(0)
+DB SCREENSIZE DUP(0)
 ; -------------------------------------------------------------------
 ; STACK
 ; -------------------------------------------------------------------
