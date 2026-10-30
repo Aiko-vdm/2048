@@ -15,6 +15,9 @@ BIGSPRITEHEIGHT EQU 176
 BIGDATASIZE EQU BIGSPRITEWIDTH*BIGSPRITEHEIGHT
 CENTERX EQU (SCRWIDTH-BIGSPRITEWIDTH)/2
 CENTERY EQU (SCRHEIGHT-BIGSPRITEHEIGHT)/2
+SMALLSPRITEWIDTH EQU 32
+SMALLSPRITEHEIGHT EQU 32
+SMALLDATASIZE EQU SMALLSPRITEWIDTH*SMALLSPRITEHEIGHT
 ; -------------------------------------------------------------------
 ; CODE
 ; -------------------------------------------------------------------
@@ -100,6 +103,21 @@ PROC drawInit
     ret
 endp drawInit
 
+PROC drawCell
+	ARG 	@@cell:dword, @@x:dword, @@y:dword
+    USES eax, ebx, ecx, edx
+    mov ecx, size
+    mov ebx, 0
+    @@drawLoop:
+    
+	lea eax, [SmallSprite + 8]
+	call ReadFile,[@@cell], eax,SMALLDATASIZE
+	call drawSprite, offset SmallSprite, VMEMADR, [@@x],[@@y]
+    loop @@drawLoop
+
+    ret
+endp drawCell
+
 PROC main
 	sti
 	cld
@@ -108,6 +126,7 @@ PROC main
 
 	call setVideoMode, 13h
     call drawInit
+	call drawCell , offset OneCell_file, 0, 0
     @@gameLoop:
     CALL wait_VBLANK, 1
     CALL drawGameState
@@ -149,6 +168,8 @@ FilledBackground_file db "assets/FBg.bin", 0
 
 BigSprite DD BIGSPRITEWIDTH, BIGSPRITEHEIGHT
 DB BIGDATASIZE DUP(0)
+SmallSprite DD SMALLSPRITEWIDTH, SMALLSPRITEHEIGHT
+DB SMALLDATASIZE DUP(0)
 ; -------------------------------------------------------------------
 ; STACK
 ; -------------------------------------------------------------------
