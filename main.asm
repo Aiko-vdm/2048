@@ -20,6 +20,12 @@ SMALLSPRITEHEIGHT EQU 32
 SMALLDATASIZE EQU SMALLSPRITEWIDTH*SMALLSPRITEHEIGHT
 DISTANCEBETWEENCELLS EQU 5
 BORDER EQU 16
+
+RANDOMIZEATTEMPTS EQU BOARDSIZELOGIC*10
+
+BOARDLENGTHLOGIC EQU 4
+BOARDWIDTHLOGIC EQU 4
+BOARDSIZELOGIC EQU BOARDLENGTHLOGIC*BOARDWIDTHLOGIC
 ; -------------------------------------------------------------------
 ; CODE
 ; -------------------------------------------------------------------
@@ -28,7 +34,8 @@ CODESEG
 STRUC tile
     icon dd 0
     value db 0 
-ENDS tile        
+ENDS tile   
+
 PROC setVideoMode
 	ARG 	@@VM:byte
 	USES 	eax
@@ -119,6 +126,27 @@ PROC drawCell
 
     ret
 endp drawCell
+
+Proc SpawnTile
+	Uses eax, esi, ecx, edx
+	mov ecx, 100
+	@@spawn:
+	xor	edx, edx
+	call rand16
+	mov	esi, BOARDSIZELOGIC
+	div	esi
+	imul edx, SIZE tile
+	lea esi, [board + edx]
+	
+	cmp	[esi].tile.value, 0
+	je	@@spawnTile
+	loop	@@spawn
+	
+	@@spawnTile:
+	mov	[esi].tile.value, 2  ;moet nog aangepast worden voor kans dat het 4 is
+	mov [esi].tile.icon, offset OneCell_file
+	ret
+Endp SpawnTile
 
 PROC main
 	sti
