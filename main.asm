@@ -13,8 +13,7 @@ SCRWIDTH EQU 320	; screen witdth
 SCRHEIGHT EQU 200	; screen height
 SPRITEWIDTH EQU 176
 SPRITEHEIGHT EQU 176
-DATASIZE EQU SPRITEWIDTH*SPRITEHEIGHT;bytes of data in file
-
+DATASIZE EQU SPRITEWIDTH*SPRITEHEIGHT
 ; -------------------------------------------------------------------
 ; CODE
 ; -------------------------------------------------------------------
@@ -81,6 +80,7 @@ PROC drawGameState
     @@drawLoop:
     
     ;CALL fillBackground, 12
+	lea eax, [sprite + 8]
 	call ReadFile, offset FilledBackground_file, eax,DATASIZE
 	call drawSprite, offset BigDim, VMEMADR, 0,0
     loop @@drawLoop
@@ -135,7 +135,7 @@ Background_file db "assets/Bg.bin", 0
 EmptyCell_file db "assets/ECell.bin", 0
 FilledBackground_file db "assets/FBg.bin", 0
 
-
+sprite DD SPRITEWIDTH, SPRITEHEIGHT
 BigDim DD SCRWIDTH, SCRHEIGHT
 DB DATASIZE DUP(0)
 ; -------------------------------------------------------------------

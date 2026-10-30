@@ -3,7 +3,7 @@
 # =============================================================================
 
 # Settings - Edit the names of the object and executable files.
-objects1 = main.obj rand.obj keyb.obj image.obj spritedp.obj
+objects1 = main.obj rand.obj keyb.obj spritedp.obj
 dest = main.exe
 
 # =============================================================================
