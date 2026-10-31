@@ -187,11 +187,12 @@ EightCell_file db "assets/256Cell.bin", 0
 NineCell_file db "assets/512Cell.bin", 0
 TenCell_file db "assets/1024Cell.bin", 0
 ElevenCell_file db "assets/2048Cell.bin", 0
-TwelveCell_file db "assets/8192Cell.bin", 0
-ThirteenCell_file db "assets/16kCell.bin", 0
-FourteenCell_file db "assets/32kCell.bin", 0
-FifteenCell_file db "assets/65kCell.bin", 0
-SixteenCell_file db "assets/131kCell.bin", 0
+TwelveCell_file db "assets/4096Cell.bin", 0
+ThirteenCell_file db "assets/8192Cell.bin", 0
+FourteenCell_file db "assets/16kCell.bin", 0
+FifteenCell_file db "assets/32kCell.bin", 0
+SixteenCell_file db "assets/65kCell.bin", 0
+SeventeenCell_file db "assets/131kCell.bin", 0
 Background_file db "assets/Bg.bin", 0
 EmptyCell_file db "assets/ECell.bin", 0
 FilledBackground_file db "assets/FBg.bin", 0
