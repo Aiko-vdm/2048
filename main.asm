@@ -26,6 +26,8 @@ RANDOMIZEATTEMPTS EQU BOARDSIZELOGIC*10
 BOARDLENGTHLOGIC EQU 4
 BOARDWIDTHLOGIC EQU 4
 BOARDSIZELOGIC EQU BOARDLENGTHLOGIC*BOARDWIDTHLOGIC
+
+FOURCHANCE EQU 5 ; 5% kans op een 4
 ; -------------------------------------------------------------------
 ; CODE
 ; -------------------------------------------------------------------
@@ -139,12 +141,27 @@ Proc SpawnTile
 	lea esi, [board + edx]
 	
 	cmp	[(tile ptr esi).value], 0
-	je	@@spawnTile
+	je	@@found
 	loop	@@spawn
+	jmp @@done
 	
-	@@spawnTile:
-	mov	[(tile ptr esi).value], 2  ;moet nog aangepast worden voor kans dat het 4 is
+	@@found:
+	call rand16
+	xor edx,edx
+	mov ebx, 100
+	div ebx
+	cmp edx, FOURCHANCE
+	jb @@spawnfour
+
+	mov	[(tile ptr esi).value], 2  
 	mov [(tile ptr esi).icon], offset OneCell_file
+	jmp @@done
+	
+	@@spawnfour:
+	mov	[(tile ptr esi).value], 4
+	mov [(tile ptr esi).icon], offset TwoCell_file
+	
+	@@done:
 	ret
 Endp SpawnTile
 
