@@ -331,7 +331,8 @@ PROC slideRight
 	ret
 ENDP slideRight
 
-PROC slideLeft
+PROC higherSlide
+	ARG 	@@start, @@step, @@condition, @@adder
 	USES ebx, ecx, edx, esi, edi
 	mov [moved], 0
 	mov esi, offset board ; begin of row
@@ -339,8 +340,8 @@ PROC slideLeft
 	
 	@@rowLoop: ; right to left
 	mov [dword ptr tempRow], 0
-	mov ecx, 0	; read
-	mov edi, 0	; write
+	mov ecx, [@@start]	; read
+	mov edi, [@@start]	; write
 	xor edx, edx
 	
 	@@scan: ; read a tile
@@ -352,18 +353,19 @@ PROC slideLeft
 	
 	cmp eax, edx ; value = last value => merge
 	jne @@place
-	inc [byte ptr tempRow + edi - 1] ; edi points to the next free tile, last placed tile is at edi + 1
+	add edi, [@@step]
+	inc [byte ptr tempRow + edi] ; edi points to the next free tile, last placed tile is at edi + 1
 	xor edx, edx ; reset last value: can't merge twice 
 	jmp @@nextScan
 	
 	@@place:
 	mov [tempRow + edi], al ; exponent of the tile to place at edi
 	mov edx, eax
-	inc edi
+	add edi, [@@adder]
 	
 	@@nextScan:
-	inc ecx
-	cmp ecx, BOARDWIDTHLOGIC
+	add ecx, [@@adder]
+	cmp ecx, [@@condition]
 	jne @@scan
 	
 	xor ecx, ecx ; write back the tempRow to the board (left to right)
@@ -397,7 +399,12 @@ PROC slideLeft
 
 	movzx eax, [moved]
 	ret
-ENDP slideLeft
+ENDP HigherSlide
+
+Proc slideLeft
+	call higherSlide, 0, -1, BOARDWIDTHLOGIC, 1
+	ret
+endp slideLeft
 
 
 PROC main
