@@ -295,7 +295,8 @@ PROC slideRight
 	
 	@@nextScan:
 	dec ecx
-	jns @@scan
+	cmp ecx, -1
+	jne @@scan
 	
 	xor ecx, ecx ; write back the tempRow to the board (left to right)
 	@@write:
@@ -338,8 +339,8 @@ PROC slideLeft
 	
 	@@rowLoop: ; right to left
 	mov [dword ptr tempRow], 0
-	xor ecx, ecx	; read
-	xor edi, edi	; write
+	mov ecx, 0	; read
+	mov edi, 0	; write
 	xor edx, edx
 	
 	@@scan: ; read a tile
@@ -363,7 +364,7 @@ PROC slideLeft
 	@@nextScan:
 	inc ecx
 	cmp ecx, BOARDWIDTHLOGIC
-	jb short @@scan
+	jne @@scan
 	
 	xor ecx, ecx ; write back the tempRow to the board (left to right)
 	@@write:
