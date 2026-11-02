@@ -239,11 +239,15 @@ ENDP handleInput
 
 PROC UpdateGameState
 	USES eax
-
+	
 	cmp [direction], DIRECTION_RIGHT
 	je @@right
 	cmp [direction], DIRECTION_LEFT
 	je @@left
+	cmp [direction], DIRECTION_DOWN
+	je @@down
+	cmp [direction], DIRECTION_UP
+	je @@up
 
 	jmp @@done
 
@@ -252,6 +256,12 @@ PROC UpdateGameState
 	jmp @@check
 	@@left:	
 	call slideLeft
+	jmp @@check
+	@@down:
+	call slideDown
+	jmp @@check
+	@@up:
+	call slideUp
 	jmp @@check
 	@@check:
 	test eax, eax
@@ -263,76 +273,8 @@ PROC UpdateGameState
 	ret
 ENDP UpdateGameState
 
-PROC slideRight
-	USES ebx, ecx, edx, esi, edi
-	mov [moved], 0
-	mov esi, offset board ; begin of row
-	mov ebx, BOARDWIDTHLOGIC ; #rows to process
-	
-	@@rowLoop: ; right to left
-	mov [dword ptr tempRow], 0
-	mov ecx, BOARDWIDTHLOGIC - 1	; read
-	mov edi, BOARDWIDTHLOGIC - 1	; write
-	xor edx, edx
-	
-	@@scan: ; read a tile
-	imul eax, ecx, SIZE tile
-	add eax, esi
-	movzx eax, [(tile ptr eax).value]
-	test eax, eax ; value = 0 => skip
-	jz @@nextScan	
-	
-	cmp eax, edx ; value = last value => merge
-	jne @@place
-	inc [byte ptr tempRow + edi + 1] ; edi points to the next free tile, last placed tile is at edi + 1
-	xor edx, edx ; reset last value: can't merge twice 
-	jmp @@nextScan
-	
-	@@place:
-	mov [tempRow + edi], al ; exponent of the tile to place at edi
-	mov edx, eax
-	dec edi
-	
-	@@nextScan:
-	dec ecx
-	cmp ecx, -1
-	jne @@scan
-	
-	xor ecx, ecx ; write back the tempRow to the board (left to right)
-	@@write:
-	imul eax, ecx, SIZE tile
-	add eax, esi
-	movzx edx, [tempRow + ecx]
-
-	cmp dl, [(tile ptr eax).value]
-	je @@same
-	mov [moved], 1
-	@@same:
-	mov [(tile ptr eax).value], dl
-
-	test edx, edx
-	jz @@empty
-	mov edx, [iconTable + edx*4 - 4] ; for a non-empty tile, look up the icon in iconTable.
-	mov [(tile ptr eax).icon], edx
-	jmp @@nextWrite
-	@@empty:
-	mov [(tile ptr eax).icon], 0
-	
-	@@nextWrite:
-	inc ecx
-	cmp ecx, BOARDWIDTHLOGIC
-	jb short @@write
-
-	add esi, BOARDWIDTHLOGIC * SIZE tile ; move to next row
-	dec ebx
-	jnz @@rowLoop
-
-	movzx eax, [moved]
-	ret
-ENDP slideRight
-
 PROC higherSlide
-	ARG 	@@start, @@step, @@condition, @@adder
+	ARG 	@@start, @@step, @@condition, @@adder, @@tile, @@row
 	USES ebx, ecx, edx, esi, edi
 	mov [moved], 0
 	mov esi, offset board ; begin of row
@@ -345,7 +287,8 @@ PROC higherSlide
 	xor edx, edx
 	
 	@@scan: ; read a tile
-	imul eax, ecx, SIZE tile
+	mov eax, ecx
+	imul eax, [@@tile]
 	add eax, esi
 	movzx eax, [(tile ptr eax).value]
 	test eax, eax ; value = 0 => skip
@@ -355,6 +298,7 @@ PROC higherSlide
 	jne @@place
 	add edi, [@@step]
 	inc [byte ptr tempRow + edi] ; edi points to the next free tile, last placed tile is at edi + 1
+	sub edi, [@@step]
 	xor edx, edx ; reset last value: can't merge twice 
 	jmp @@nextScan
 	
@@ -370,7 +314,8 @@ PROC higherSlide
 	
 	xor ecx, ecx ; write back the tempRow to the board (left to right)
 	@@write:
-	imul eax, ecx, SIZE tile
+	mov eax, ecx
+	imul eax, [@@tile]
 	add eax, esi
 	movzx edx, [tempRow + ecx]
 
@@ -393,19 +338,33 @@ PROC higherSlide
 	cmp ecx, BOARDWIDTHLOGIC
 	jb short @@write
 
-	add esi, BOARDWIDTHLOGIC * SIZE tile ; move to next row
+	add esi, [@@row] ; move to next row
 	dec ebx
 	jnz @@rowLoop
 
 	movzx eax, [moved]
 	ret
-ENDP HigherSlide
+ENDP higherSlide
 
 Proc slideLeft
-	call higherSlide, 0, -1, BOARDWIDTHLOGIC, 1
+	call higherSlide, 0, -1, BOARDWIDTHLOGIC, 1, SIZE tile, BOARDWIDTHLOGIC*SIZE tile
 	ret
 endp slideLeft
 
+Proc slideRight
+	call higherSlide, BOARDWIDTHLOGIC-1, 1, -1, -1, SIZE tile, BOARDWIDTHLOGIC*SIZE tile
+	ret
+endp slideRight
+
+Proc slideDown
+	call higherSlide, BOARDWIDTHLOGIC-1, 1, -1, -1, BOARDWIDTHLOGIC*SIZE tile, SIZE tile
+	ret
+endp slideDown
+
+Proc slideUp
+	call higherSlide, 0, -1, BOARDWIDTHLOGIC, 1, BOARDWIDTHLOGIC*SIZE tile, SIZE tile
+	ret
+endp slideUp
 
 PROC main
 	sti
