@@ -78,27 +78,6 @@ proc wait_VBLANK
 	ret 
 endp wait_VBLANK
 
-PROC fillBackground
-	ARG 	@@fillcolor:byte
-	USES 	eax, ecx, edi
-
-	; Initialize video memory address.
-	mov	edi, VMEMADR
-	
-	; copy color value across all bytes of eax
-	mov al, [@@fillcolor]	; ???B
-	mov ah, al				; ??BB
-	mov cx, ax			
-	shl eax, 16				; BB00
-	mov ax, cx				; BBBB
-
-	; Scan the whole video memory and assign the background colour.
-	mov	ecx, SCRWIDTH*SCRHEIGHT/4
-	rep	stosd
-
-	ret
-ENDP fillBackground
-
 PROC drawGameState
     USES eax, ebx, edx, esi
 
@@ -239,7 +218,7 @@ ENDP handleInput
 
 PROC UpdateGameState
 	USES eax
-	
+
 	cmp [direction], DIRECTION_RIGHT
 	je @@right
 	cmp [direction], DIRECTION_LEFT
@@ -274,7 +253,7 @@ PROC UpdateGameState
 ENDP UpdateGameState
 
 PROC higherSlide
-	ARG 	@@start, @@step, @@condition, @@adder, @@tile, @@row
+	ARG 	@@start, @@step, @@condition, @@tile, @@row
 	USES ebx, ecx, edx, esi, edi
 	mov [moved], 0
 	mov esi, offset board ; begin of row
@@ -305,10 +284,10 @@ PROC higherSlide
 	@@place:
 	mov [tempRow + edi], al ; exponent of the tile to place at edi
 	mov edx, eax
-	add edi, [@@adder]
+	sub edi, [@@step]
 	
 	@@nextScan:
-	add ecx, [@@adder]
+	sub ecx, [@@step]
 	cmp ecx, [@@condition]
 	jne @@scan
 	
@@ -347,22 +326,22 @@ PROC higherSlide
 ENDP higherSlide
 
 Proc slideLeft
-	call higherSlide, 0, -1, BOARDWIDTHLOGIC, 1, SIZE tile, BOARDWIDTHLOGIC*SIZE tile
+	call higherSlide, 0, -1, BOARDWIDTHLOGIC, SIZE tile, BOARDWIDTHLOGIC*SIZE tile
 	ret
 endp slideLeft
 
 Proc slideRight
-	call higherSlide, BOARDWIDTHLOGIC-1, 1, -1, -1, SIZE tile, BOARDWIDTHLOGIC*SIZE tile
+	call higherSlide, BOARDWIDTHLOGIC-1, 1, -1, SIZE tile, BOARDWIDTHLOGIC*SIZE tile
 	ret
 endp slideRight
 
 Proc slideDown
-	call higherSlide, BOARDWIDTHLOGIC-1, 1, -1, -1, BOARDWIDTHLOGIC*SIZE tile, SIZE tile
+	call higherSlide, BOARDWIDTHLOGIC-1, 1, -1,  BOARDWIDTHLOGIC*SIZE tile, SIZE tile
 	ret
 endp slideDown
 
 Proc slideUp
-	call higherSlide, 0, -1, BOARDWIDTHLOGIC, 1, BOARDWIDTHLOGIC*SIZE tile, SIZE tile
+	call higherSlide, 0, -1, BOARDWIDTHLOGIC, BOARDWIDTHLOGIC*SIZE tile, SIZE tile
 	ret
 endp slideUp
 
