@@ -209,7 +209,7 @@ PROC handleInput
 	@@next:
 	inc ecx
 	cmp ecx, 4
-	jb short @@keyLoop
+	jb @@keyLoop
 	
 	cmp [__keyb_keyboardState + KEY_ESC], 0
 	je @@done
@@ -219,6 +219,89 @@ PROC handleInput
 	ret
 	
 ENDP handleInput
+
+PROC UpdateGameState
+	USES eax
+
+	cmp [direction], DIRECTION_RIGHT
+	jne @@done
+
+	call slideRight
+	test eax, eax
+	jz @@done					
+	call SpawnTile, 1
+	mov [redraw], 1
+
+	@@done:
+	ret
+ENDP UpdateGameState
+
+PROC slideRight
+	USES ebx, ecx, edx, esi, edi
+	mov [moved], 0
+	mov esi, offset board ; begin of row
+	mov ebx, BOARDWIDTHLOGIC ; #rows to process
+	
+	@@rowLoop: ; right to left
+	mov [dword ptr tempRow], 0
+	mov ecx, BOARDWIDTHLOGIC - 1	; read
+	mov edi, BOARDWIDTHLOGIC - 1	; write
+	xor edx, edx
+	
+	@@scan: ; read a tile
+	imul eax, ecx, SIZE tile
+	add eax, esi
+	movzx eax, [(tile ptr eax).value]
+	test eax, eax ; value = 0 => skip
+	jz @@nextScan	
+	
+	cmp eax, edx ; value = last value => merge
+	jne @@place
+	inc [byte ptr tempRow + edi + 1] ; edi points to the next free tile, last placed tile is at edi + 1
+	xor edx, edx ; reset last value: can't merge twice 
+	jmp @@nextScan
+	
+	@@place:
+	mov [tempRow + edi], al ; exponent of the tile to place at edi
+	mov edx, eax
+	dec edi
+	
+	@@nextScan:
+	dec ecx
+	jns @@scan
+	
+	xor ecx, ecx ; write back the tempRow to the board (left to right)
+	@@write:
+	imul eax, ecx, SIZE tile
+	add eax, esi
+	movzx edx, [tempRow + ecx]
+
+	cmp dl, [(tile ptr eax).value]
+	je @@same
+	mov [moved], 1
+	@@same:
+	mov [(tile ptr eax).value], dl
+
+	test edx, edx
+	jz @@empty
+	mov edx, [iconTable + edx*4 - 4] ; for a non-empty tile, look up the icon in iconTable.
+	mov [(tile ptr eax).icon], edx
+	jmp @@nextWrite
+	@@empty:
+	mov [(tile ptr eax).icon], 0
+	
+	@@nextWrite:
+	inc ecx
+	cmp ecx, BOARDWIDTHLOGIC
+	jb short @@write
+
+	add esi, BOARDWIDTHLOGIC * SIZE tile ; move to next row
+	dec ebx
+	jnz @@rowLoop
+
+	movzx eax, [moved]
+	ret
+ENDP slideRight
 
 PROC main
 	sti
@@ -281,6 +364,17 @@ keyTable  db KEY_UP, KEY_DOWN, KEY_LEFT, KEY_RIGHT   ; index + 1 = DIRECTION_xxx
 prevState db 4 dup(0)
 direction db DIRECTION_NONE
 quit      db 0
+
+tempRow  db 4 dup(0)
+moved   db 0
+redraw  db 1			; 1 zodat het begin getekend wordt
+
+iconTable dd offset OneCell_file, offset TwoCell_file, offset ThreeCell_file
+          dd offset FourCell_file, offset FiveCell_file, offset SixCell_file
+          dd offset SevenCell_file, offset EightCell_file, offset NineCell_file
+          dd offset TenCell_file, offset ElevenCell_file, offset TwelveCell_file
+          dd offset ThirteenCell_file, offset FourteenCell_file, offset FifteenCell_file
+          dd offset SixteenCell_file, offset SeventeenCell_file
 ; -------------------------------------------------------------------
 ; STACK
 ; -------------------------------------------------------------------
