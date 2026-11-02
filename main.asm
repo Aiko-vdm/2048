@@ -215,17 +215,20 @@ PROC main
 	pop	es
 
 	call setVideoMode, 13h
+	call __keyb_installKeyboardHandler
     call drawInit
 	call drawCell , offset OneCell_file, 0, 0
     @@gameLoop:
     CALL wait_VBLANK, 1
     CALL drawGameState
-    ;CALL handleInput
+    CALL handleInput
     ;CALL updateGameState
     ;CALL checkGameState
-    CMP AL, 3 ;loss?
-    JNE @@gameLoop
-
+    ;CMP AL, 3 ;loss?
+	cmp [quit], 0
+	je @@gameLoop
+    ;JNE @@gameLoop
+	call __keyb_uninstallKeyboardHandler
     mov ax,4c00h 
     int 21h
 ENDP main
