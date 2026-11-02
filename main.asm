@@ -7,7 +7,7 @@ INCLUDE "keyb.inc"
 INCLUDE "rand.inc"
 INCLUDE "spritedp.inc"
 
-VMEMADR EQU 0A0000h	; video memory address  320x200 dus 6400 adresses verder eindigt ie
+VMEMADR EQU 0A0000h	; video memory address  320x200
 SCRWIDTH EQU 320	; screen witdth
 SCRHEIGHT EQU 200	; screen height
 BIGSPRITEWIDTH EQU 176
@@ -22,12 +22,11 @@ DISTANCEBETWEENCELLS EQU 5
 BORDER EQU 16
 
 RANDOMIZEATTEMPTS EQU BOARDSIZELOGIC*10
+FOURCHANCE EQU 5 ; 5% chance to spawn a 4
 
 BOARDLENGTHLOGIC EQU 4
 BOARDWIDTHLOGIC EQU 4
 BOARDSIZELOGIC EQU BOARDLENGTHLOGIC*BOARDWIDTHLOGIC
-
-FOURCHANCE EQU 5 ; 5% kans op een 4
 
 KEY_ESC   EQU 01h
 KEY_UP    EQU 48h
@@ -81,11 +80,11 @@ endp wait_VBLANK
 PROC drawGameState
     USES eax, ebx, edx, esi
 
-	xor edx, edx					; edx = y (rij)
+	xor edx, edx					; edx = y (row)
 	@@row:
-	xor ebx, ebx					; ebx = x (kolom)
+	xor ebx, ebx					; ebx = x (column)
 	@@col:
-	; esi = adres van tile (y * 4 + x) in board
+	; esi = adres of tile (y * 4 + x) on board
 	mov eax, edx
 	imul eax, BOARDWIDTHLOGIC
 	add eax, ebx
@@ -93,7 +92,7 @@ PROC drawGameState
 	lea esi, [board + eax]
 
 	cmp [(tile ptr esi).value], 0
-	je short @@skip					; lege tile: niets tekenen
+	je short @@skip					; empty tile draw nothing
 	call drawCell, [(tile ptr esi).icon], ebx, edx
 
 	@@skip:
@@ -196,7 +195,7 @@ PROC handleInput
 	mov [prevState + ecx], dl ; updates the previous state of the current key
 
 	test dl, dl 
-	jz @@next ; key is'nt pressed
+	jz @@next ; key isn't pressed
 	test dh, dh
 	jnz @@next ; key was already pressed
 	lea eax, [ecx + 1]
@@ -336,7 +335,7 @@ Proc slideRight
 endp slideRight
 
 Proc slideDown
-	call higherSlide, BOARDWIDTHLOGIC-1, 1, -1,  BOARDWIDTHLOGIC*SIZE tile, SIZE tile
+	call higherSlide, BOARDWIDTHLOGIC-1, 1, -1, BOARDWIDTHLOGIC*SIZE tile, SIZE tile
 	ret
 endp slideDown
 
@@ -356,7 +355,6 @@ PROC main
     call drawInit
 	call SpawnTile, 2
 	call drawGameState
-	;call drawCell , offset OneCell_file, 0, 0
     @@gameLoop:
     CALL wait_VBLANK, 1
 	call handleInput
@@ -367,16 +365,11 @@ PROC main
 	call drawInit				
 	call drawGameState
 	mov [redraw], 0
-	@@noDraw:
 
+	@@noDraw:
 	cmp [quit], 0
 	je @@gameLoop
-    ;CALL drawGameState
-    ;CALL handleInput
-    ;CALL updateGameState
-    ;CALL checkGameState
-    ;CMP AL, 3 ;loss?
-    ;JNE @@gameLoop
+
 	call __keyb_uninstallKeyboardHandler
     mov ax,4c00h 
     int 21h
@@ -386,8 +379,7 @@ ENDP main
 ; DATA
 ; -------------------------------------------------------------------
 DATASEG
-size equ 4
-board tile size dup(size dup(<0, 0>))
+board tile BOARDWIDTHLOGIC dup(BOARDLENGTHLOGIC dup(<0, 0>))
 OneCell_file db "assets/2Cell.bin", 0
 TwoCell_file db "assets/4Cell.bin", 0
 ThreeCell_file db "assets/8Cell.bin", 0
