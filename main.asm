@@ -141,7 +141,13 @@ PROC drawCell
 endp drawCell
 
 Proc SpawnTile
-	Uses eax, esi, ecx, edx
+	ARG  @@count:dword
+	Uses ebx, esi, ecx, edx, edi
+	mov edi, [@@count]
+	test edi, edi
+	jz @@success
+	
+	@@nextTile:
 	mov ecx, 100
 	@@spawn:
 	xor	edx, edx
@@ -154,7 +160,8 @@ Proc SpawnTile
 	cmp	[(tile ptr esi).value], 0
 	je	@@found
 	loop	@@spawn
-	jmp @@done
+	xor eax, eax
+	ret
 	
 	@@found:
 	call rand16
@@ -166,13 +173,18 @@ Proc SpawnTile
 
 	mov	[(tile ptr esi).value], 2  
 	mov [(tile ptr esi).icon], offset OneCell_file
-	jmp @@done
+	jmp @@placed
 	
 	@@spawnfour:
 	mov	[(tile ptr esi).value], 4
 	mov [(tile ptr esi).icon], offset TwoCell_file
 	
-	@@done:
+	@@placed:
+	dec edi
+	jnz	@@nextTile
+	
+	@@success:
+	mov eax, 1
 	ret
 Endp SpawnTile
 
