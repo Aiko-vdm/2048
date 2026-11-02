@@ -100,15 +100,32 @@ PROC fillBackground
 ENDP fillBackground
 
 PROC drawGameState
-    USES eax, ebx, ecx, edx
-    mov ecx, size
-    mov ebx, 0
-    @@drawLoop:
-    
-    ;CALL fillBackground, 12
-    loop @@drawLoop
+    USES eax, ebx, edx, esi
 
-    ret
+	xor edx, edx					; edx = y (rij)
+	@@row:
+	xor ebx, ebx					; ebx = x (kolom)
+	@@col:
+	; esi = adres van tile (y * 4 + x) in board
+	mov eax, edx
+	imul eax, BOARDWIDTHLOGIC
+	add eax, ebx
+	imul eax, SIZE tile
+	lea esi, [board + eax]
+
+	cmp [(tile ptr esi).value], 0
+	je short @@skip					; lege tile: niets tekenen
+	call drawCell, [(tile ptr esi).icon], ebx, edx
+
+	@@skip:
+	inc ebx
+	cmp ebx, BOARDWIDTHLOGIC
+	jb short @@col
+	inc edx
+	cmp edx, BOARDLENGTHLOGIC
+	jb short @@row
+
+	ret
 endp drawGameState
 
 PROC drawInit
@@ -312,16 +329,28 @@ PROC main
 	call setVideoMode, 13h
 	call __keyb_installKeyboardHandler
     call drawInit
-	call drawCell , offset OneCell_file, 0, 0
+	call SpawnTile, 2
+	call drawGameState
+	;call drawCell , offset OneCell_file, 0, 0
     @@gameLoop:
     CALL wait_VBLANK, 1
-    CALL drawGameState
-    CALL handleInput
+	call handleInput
+	call UpdateGameState
+	
+	cmp [redraw], 0
+	je short @@noDraw
+	call drawInit				
+	call drawGameState
+	mov [redraw], 0
+	@@noDraw:
+
+	cmp [quit], 0
+	je @@gameLoop
+    ;CALL drawGameState
+    ;CALL handleInput
     ;CALL updateGameState
     ;CALL checkGameState
     ;CMP AL, 3 ;loss?
-	cmp [quit], 0
-	je @@gameLoop
     ;JNE @@gameLoop
 	call __keyb_uninstallKeyboardHandler
     mov ax,4c00h 
