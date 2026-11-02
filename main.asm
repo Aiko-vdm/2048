@@ -28,6 +28,17 @@ BOARDWIDTHLOGIC EQU 4
 BOARDSIZELOGIC EQU BOARDLENGTHLOGIC*BOARDWIDTHLOGIC
 
 FOURCHANCE EQU 5 ; 5% kans op een 4
+
+KEY_ESC   EQU 01h
+KEY_UP    EQU 48h
+KEY_DOWN  EQU 50h
+KEY_LEFT  EQU 4Bh
+KEY_RIGHT EQU 4Dh
+DIRECTION_NONE  EQU 0
+DIRECTION_UP    EQU 1
+DIRECTION_DOWN  EQU 2
+DIRECTION_LEFT  EQU 3
+DIRECTION_RIGHT EQU 4
 ; -------------------------------------------------------------------
 ; CODE
 ; -------------------------------------------------------------------
@@ -165,6 +176,38 @@ Proc SpawnTile
 	ret
 Endp SpawnTile
 
+PROC handleInput
+	; checks each frame if a new arrow key has been pressed and stores result in variable
+	USES eax, ebx, ecx, edx
+	mov [direction], DIRECTION_NONE
+	xor ecx, ecx
+	@@keyLoop: ; we loop over arrow keys with ecx as index
+	movzx ebx, [keyTable + ecx] ; retrieves the scan code of the current key
+	mov dl, [__keyb_keyboardState + ebx] ; retrieves the state of the current key
+	mov dh, [prevState + ecx] ; retrieves the previous state of the current key
+	mov [prevState + ecx], dl ; updates the previous state of the current key
+
+	test dl, dl 
+	jz @@next ; key is'nt pressed
+	test dh, dh
+	jnz @@next ; key was already pressed
+	lea eax, [ecx + 1]
+	mov [direction], al ; store the direction of the pressed key
+
+	@@next:
+	inc ecx
+	cmp ecx, 4
+	jb short @@keyLoop
+	
+	cmp [__keyb_keyboardState + KEY_ESC], 0
+	je @@done
+	mov [quit], 1
+
+	@@done:
+	ret
+	
+ENDP handleInput
+
 PROC main
 	sti
 	cld
@@ -218,6 +261,11 @@ BigSprite DD BIGSPRITEWIDTH, BIGSPRITEHEIGHT
 DB BIGDATASIZE DUP(0)
 SmallSprite DD SMALLSPRITEWIDTH, SMALLSPRITEHEIGHT
 DB SMALLDATASIZE DUP(0)
+
+keyTable  db KEY_UP, KEY_DOWN, KEY_LEFT, KEY_RIGHT   ; index + 1 = DIRECTION_xxx
+prevState db 4 dup(0)
+direction db DIRECTION_NONE
+quit      db 0
 ; -------------------------------------------------------------------
 ; STACK
 ; -------------------------------------------------------------------
