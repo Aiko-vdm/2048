@@ -46,7 +46,7 @@ CODESEG
 
 STRUC tile
     icon dd 0
-    value db 0 
+    value db 0 ; exponent: 0 = empty, 1 = 2, 2 = 4, etc.
 ENDS tile   
 
 PROC setVideoMode
@@ -171,12 +171,12 @@ Proc SpawnTile
 	cmp edx, FOURCHANCE
 	jb @@spawnfour
 
-	mov	[(tile ptr esi).value], 2  
+	mov	[(tile ptr esi).value], 1  
 	mov [(tile ptr esi).icon], offset OneCell_file
 	jmp @@placed
 	
 	@@spawnfour:
-	mov	[(tile ptr esi).value], 4
+	mov	[(tile ptr esi).value], 2
 	mov [(tile ptr esi).icon], offset TwoCell_file
 	
 	@@placed:
