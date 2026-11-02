@@ -241,9 +241,19 @@ PROC UpdateGameState
 	USES eax
 
 	cmp [direction], DIRECTION_RIGHT
-	jne @@done
+	je @@right
+	cmp [direction], DIRECTION_LEFT
+	je @@left
 
+	jmp @@done
+
+	@@right:
 	call slideRight
+	jmp @@check
+	@@left:	
+	call slideLeft
+	jmp @@check
+	@@check:
 	test eax, eax
 	jz @@done					
 	call SpawnTile, 1
@@ -319,6 +329,75 @@ PROC slideRight
 	movzx eax, [moved]
 	ret
 ENDP slideRight
+
+PROC slideLeft
+	USES ebx, ecx, edx, esi, edi
+	mov [moved], 0
+	mov esi, offset board ; begin of row
+	mov ebx, BOARDWIDTHLOGIC ; #rows to process
+	
+	@@rowLoop: ; right to left
+	mov [dword ptr tempRow], 0
+	xor ecx, ecx	; read
+	xor edi, edi	; write
+	xor edx, edx
+	
+	@@scan: ; read a tile
+	imul eax, ecx, SIZE tile
+	add eax, esi
+	movzx eax, [(tile ptr eax).value]
+	test eax, eax ; value = 0 => skip
+	jz @@nextScan	
+	
+	cmp eax, edx ; value = last value => merge
+	jne @@place
+	inc [byte ptr tempRow + edi - 1] ; edi points to the next free tile, last placed tile is at edi + 1
+	xor edx, edx ; reset last value: can't merge twice 
+	jmp @@nextScan
+	
+	@@place:
+	mov [tempRow + edi], al ; exponent of the tile to place at edi
+	mov edx, eax
+	inc edi
+	
+	@@nextScan:
+	inc ecx
+	cmp ecx, BOARDWIDTHLOGIC
+	jb short @@scan
+	
+	xor ecx, ecx ; write back the tempRow to the board (left to right)
+	@@write:
+	imul eax, ecx, SIZE tile
+	add eax, esi
+	movzx edx, [tempRow + ecx]
+
+	cmp dl, [(tile ptr eax).value]
+	je @@same
+	mov [moved], 1
+	@@same:
+	mov [(tile ptr eax).value], dl
+
+	test edx, edx
+	jz @@empty
+	mov edx, [iconTable + edx*4 - 4] ; for a non-empty tile, look up the icon in iconTable.
+	mov [(tile ptr eax).icon], edx
+	jmp @@nextWrite
+	@@empty:
+	mov [(tile ptr eax).icon], 0
+	
+	@@nextWrite:
+	inc ecx
+	cmp ecx, BOARDWIDTHLOGIC
+	jb short @@write
+
+	add esi, BOARDWIDTHLOGIC * SIZE tile ; move to next row
+	dec ebx
+	jnz @@rowLoop
+
+	movzx eax, [moved]
+	ret
+ENDP slideLeft
+
 
 PROC main
 	sti
