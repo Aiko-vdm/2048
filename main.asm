@@ -44,7 +44,7 @@ DIRECTION_RIGHT EQU 4
 CODESEG
 
 STRUC tile
-    icon dd 0
+    icon dd 0 ; pointer to file name of the icon to draw
     value db 0 ; exponent: 0 = empty, 1 = 2, 2 = 4, etc.
 ENDS tile   
 
@@ -59,6 +59,7 @@ PROC setVideoMode
 ENDP setVideoMode
 
 proc wait_VBLANK
+	; The game loop runs in sync with the screen (60 times per second)
 	ARG @@framecount: word
 	USES eax, ecx, edx
 	mov dx, 03dah 				
@@ -78,6 +79,8 @@ proc wait_VBLANK
 endp wait_VBLANK
 
 PROC drawGameState
+	; draws the current state of the game board
+	; loops over all tiles and draws them if they are not empty
     USES eax, ebx, edx, esi
 
 	xor edx, edx					; edx = y (row)
@@ -107,6 +110,7 @@ PROC drawGameState
 endp drawGameState
 
 PROC drawInit
+	; draws the background
     USES eax, ebx, ecx, edx
     
 	lea eax, [BigSprite + 8]
@@ -117,6 +121,7 @@ PROC drawInit
 endp drawInit
 
 PROC drawCell
+	; draws a cell at the given coordinates
 	ARG 	@@cell:dword, @@x:dword, @@y:dword
     USES eax, ebx, ecx, edx
 
@@ -138,7 +143,7 @@ endp drawCell
 Proc SpawnTile
 	ARG  @@count:dword
 	Uses ebx, esi, ecx, edx, edi
-	mov edi, [@@count]
+	mov edi, [@@count] ; number of tiles to spawn
 	test edi, edi
 	jz @@success
 	
@@ -148,7 +153,7 @@ Proc SpawnTile
 	xor	edx, edx
 	call rand16
 	mov	esi, BOARDSIZELOGIC
-	div	esi
+	div	esi 	; divide by board size to get a random tile index
 	imul edx, SIZE tile
 	lea esi, [board + edx]
 	
@@ -156,14 +161,14 @@ Proc SpawnTile
 	je	@@found
 	loop	@@spawn
 	xor eax, eax
-	ret
+	ret 	; no empty tile found, return 0
 	
 	@@found:
 	call rand16
 	xor edx,edx
 	mov ebx, 100
-	div ebx
-	cmp edx, FOURCHANCE
+	div ebx 	; edx = random number between 0 and 99
+	cmp edx, FOURCHANCE 	; if random number < FOURCHANCE, spawn a 4, else spawn a 2
 	jb @@spawnfour
 
 	mov	[(tile ptr esi).value], 1  
@@ -179,7 +184,7 @@ Proc SpawnTile
 	jnz	@@nextTile
 	
 	@@success:
-	mov eax, 1
+	mov eax, 1 ; return 1 to indicate that every tile was spawned
 	ret
 Endp SpawnTile
 
@@ -216,6 +221,8 @@ PROC handleInput
 ENDP handleInput
 
 PROC UpdateGameState
+	; updates the game state based on the current direction of movement. 
+	; if a move was made, it spawns a new tile and sets the redraw flag.
 	USES eax
 
 	cmp [direction], DIRECTION_RIGHT
@@ -252,45 +259,51 @@ PROC UpdateGameState
 ENDP UpdateGameState
 
 PROC higherSlide
-	ARG 	@@start, @@step, @@condition, @@tile, @@row
+	; higherSlide shifts a line (row or column) toward a “wall”. The four directions differ only in:
+	; where you begin (position of "wall": @@start)
+	; the direction in which you traverse the line (@@step: +1 or -1)
+	; how many bytes you shift per position within the line (@@tile: SIZE tile)
+	; how many bytes you shift to reach the next line (@@row: BOARDWIDTHLOGIC*SIZE tile for rows, SIZE tile for columns)
+	ARG 	@@start, @@step, @@condition, @@tile, @@row 
+	; @@condition is the value of the index that indicates the end of the line (-1 or BOARDWIDTHLOGIC)
 	USES ebx, ecx, edx, esi, edi
 	mov [moved], 0
-	mov esi, offset board ; begin of row
+	mov esi, offset board ; begin of line to process
 	mov ebx, BOARDWIDTHLOGIC ; #rows to process
 	
-	@@rowLoop: ; right to left
-	mov [dword ptr tempRow], 0
+	@@rowLoop: 
+	mov [dword ptr tempRow], 0	; clear the temporary row
 	mov ecx, [@@start]	; read
-	mov edi, [@@start]	; write
-	xor edx, edx
+	mov edi, [@@start]	; write = next free tile in the temporary row
+	xor edx, edx ; last value = 0 (no tile yet)
 	
 	@@scan: ; read a tile
 	mov eax, ecx
-	imul eax, [@@tile]
-	add eax, esi
+	imul eax, [@@tile] 	; position of the tile to read in bytes (position * bytes per tile)
+	add eax, esi		; + beginning of line = address of the tile to read
 	movzx eax, [(tile ptr eax).value]
-	test eax, eax ; value = 0 => skip
-	jz @@nextScan	
+	test eax, eax 
+	jz @@nextScan	; value = 0 => skip
 	
-	cmp eax, edx ; value = last value => merge
+	cmp eax, edx ; value = last value 
 	jne @@place
-	add edi, [@@step]
-	inc [byte ptr tempRow + edi] ; edi points to the next free tile, last placed tile is at edi + 1
+	add edi, [@@step] ; merge
+	inc [byte ptr tempRow + edi] ; edi points to the next free tile, last placed tile is at edi + step (towards the wall)
 	sub edi, [@@step]
 	xor edx, edx ; reset last value: can't merge twice 
 	jmp @@nextScan
 	
 	@@place:
 	mov [tempRow + edi], al ; exponent of the tile to place at edi
-	mov edx, eax
-	sub edi, [@@step]
+	mov edx, eax	; last value = value of the tile just placed
+	sub edi, [@@step]	; move to the next free tile in the temporary row (away from the wall)
 	
 	@@nextScan:
 	sub ecx, [@@step]
 	cmp ecx, [@@condition]
 	jne @@scan
 	
-	xor ecx, ecx ; write back the tempRow to the board (left to right)
+	xor ecx, ecx ; write back the tempRow to the board (0 -> BOARDWIDTHLOGIC-1)
 	@@write:
 	mov eax, ecx
 	imul eax, [@@tile]
@@ -299,7 +312,7 @@ PROC higherSlide
 
 	cmp dl, [(tile ptr eax).value]
 	je @@same
-	mov [moved], 1
+	mov [moved], 1 	; if the value of the tile has changed, set moved to 1
 	@@same:
 	mov [(tile ptr eax).value], dl
 
@@ -320,7 +333,7 @@ PROC higherSlide
 	dec ebx
 	jnz @@rowLoop
 
-	movzx eax, [moved]
+	movzx eax, [moved] ; return 1 if a tile has moved, 0 otherwise
 	ret
 ENDP higherSlide
 
@@ -361,7 +374,7 @@ PROC main
 	call UpdateGameState
 	
 	cmp [redraw], 0
-	je short @@noDraw
+	je @@noDraw
 	call drawInit				
 	call drawGameState
 	mov [redraw], 0
