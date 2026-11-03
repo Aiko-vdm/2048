@@ -371,6 +371,7 @@ PROC main
 	je @@gameLoop
 
 	call __keyb_uninstallKeyboardHandler
+	call setVideoMode, 03h
     mov ax,4c00h 
     int 21h
 ENDP main
