@@ -42,6 +42,10 @@ DIRECTION_UP    EQU 1
 DIRECTION_DOWN  EQU 2
 DIRECTION_LEFT  EQU 3
 DIRECTION_RIGHT EQU 4
+
+STATE_PLAYING EQU 0
+STATE_WON     EQU 1
+STATE_LOST    EQU 2
 ; -------------------------------------------------------------------
 ; CODE
 ; -------------------------------------------------------------------
@@ -223,6 +227,63 @@ PROC handleInput
 	ret
 	
 ENDP handleInput
+
+PROC checkGameState
+	; checks if the game is won, lost or still playing
+	; returns STATE_WON, STATE_LOST or STATE_PLAYING in eax
+	USES ebx, ecx, edx, esi, edi
+	
+	; loop over all tiles to check if any tile has value 2048 (exponent 11)
+	mov esi, offset board
+	mov ecx, BOARDSIZELOGIC
+	@@winLoop:
+	cmp [(tile ptr esi).value], 11 
+	je @@won
+	add esi, SIZE tile
+	loop @@winLoop
+	
+	; check if any move is possible (if any tile has a neighbor with the same value)
+	mov esi, offset board 	; esi = address of the current tile
+	xor edx, edx			; edx = y
+	@@row:
+	xor ebx, ebx		; ebx = x
+	@@col:
+	mov al, [(tile ptr esi).value]
+	test al, al
+	jz @@playing 		; if the tile is empty, the game is still playing
+
+	cmp ebx, BOARDWIDTHLOGIC-1
+	jae @@noRight 		; if the tile is on the right edge, don't check right neighbor
+	lea edi, [esi + SIZE tile]	; edi = address of the right neighbor
+	cmp al,[(tile ptr edi).value] 
+	je @@playing	; if the right neighbor has the same value, you can still merge
+	
+	@@noRight:
+	cmp edx, BOARDLENGTHLOGIC-1
+	jea @@noDown	; if the tile is on the bottom edge, don't check down neighbor
+	lea edi, [esi + BOARDWIDTHLOGIC*SIZE tile] ; edi = address of the down neighbor
+	cmp al,[(tile ptr edi).value]
+	je short @@playing	; again, if the down neighbor has the same value, you can still merge
+
+	@@noDown:
+	add esi, SIZE tile
+	inc ebx
+	cmp ebx, BOARDWIDTHLOGIC
+	jb @@col
+	inc edx
+	cmp edx, BOARDLENGTHLOGIC
+	jb @@row
+	mov eax, STATE_LOST ; no empty tile and no merge possible, game is lost
+	ret
+
+	@@won:
+	mov eax, STATE_WON
+	ret
+	
+	@@playing:
+	mov eax, STATE_PLAYING
+	ret
+ENDP checkGameState
 
 PROC UpdateGameState
 	; updates the game state based on the current direction of movement. 
@@ -434,6 +495,7 @@ keyTable  db KEY_UP, KEY_DOWN, KEY_LEFT, KEY_RIGHT   ; index + 1 = DIRECTION_xxx
 prevState db 4 dup(0)
 direction db DIRECTION_NONE
 quit      db 0
+gameState db STATE_PLAYING
 
 tempRow  db 4 dup(0)
 moved   db 0
