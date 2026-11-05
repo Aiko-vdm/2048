@@ -13,8 +13,6 @@ SCRHEIGHT EQU 200	; screen height
 BIGSPRITEWIDTH EQU 176
 BIGSPRITEHEIGHT EQU 176
 BIGDATASIZE EQU BIGSPRITEWIDTH*BIGSPRITEHEIGHT
-CENTERX EQU (SCRWIDTH-BIGSPRITEWIDTH)/2
-CENTERY EQU (SCRHEIGHT-BIGSPRITEHEIGHT)/2
 SMALLSPRITEWIDTH EQU 32
 SMALLSPRITEHEIGHT EQU 32
 SMALLDATASIZE EQU SMALLSPRITEWIDTH*SMALLSPRITEHEIGHT
@@ -116,17 +114,48 @@ PROC drawGameState
 
 	ret
 endp drawGameState
+PROC Centerx
+	; returns the x coordinate where the corner of the background should be so its centerd
+	arg @@width: dword
+	uses eax,edx
+	mov eax, SCRWIDTH
+	sub eax, [@@width]
+	shr eax, 1
+	ret
+endp Centerx
+PROC Centery
+	; returns the y coordinate where the corner of the background should be so its centerd
+	arg @@height: dword
+	uses eax,edx
+	mov eax, SCRHEIGHT
+	sub eax, [@@height]
+	shr eax, 1
+	ret
+endp Centery
 
 PROC drawInit
+	arg 	@@sprite: dword,@@file: dword,@@datasize: dword, @@centerx: dword, @@centery: dword
 	; draws the background
     USES eax, ebx, ecx, edx
-    
-	lea eax, [BigSprite + 8]
-	call ReadFile, offset FilledBackground_file, eax,BIGDATASIZE
-	call drawSprite, offset BigSprite, VMEMADR, CENTERX,CENTERY
+    mov eax,[@@sprite]
+	add eax, 8
+	call ReadFile, [@@file], eax, [@@datasize]
+	call drawSprite, offset [@@sprite], VMEMADR, call centerx [@@centerx], call centery [@@centery]
 
     ret
 endp drawInit
+PROC draw4Bg
+	call drawInit, offset BigSprite, offset FilledBackground_file, BIGDATASIZE, BIGSPRITEWIDTH, BIGSPRITEHEIGHT
+	ret
+endp draw4Bg
+PROC draw3Bg
+	call drawInit, offset 3Sprite, offset 3Background_file, 3SPRITEDATASIZE, 3SPRITEWIDTH, 3SPRITEHEIGHT
+	ret
+endp draw3Bg
+PROC draw5Bg
+	call drawInit, offset 5Sprite, offset 5Background_file, 5SPRITEDATASIZE, 5SPRITEWIDTH, 5SPRITEHEIGHT
+	ret
+endp draw5Bg
 
 PROC drawCell
 	; draws a cell at the given coordinates
@@ -430,7 +459,7 @@ PROC main
 
 	call setVideoMode, 13h
 	call __keyb_installKeyboardHandler
-    call drawInit
+    call draw4Bg
 	call SpawnTile, 2
 	call drawGameState
     @@gameLoop:
@@ -440,7 +469,7 @@ PROC main
 	
 	cmp [redraw], 0
 	je @@noDraw
-	call drawInit				
+	call draw4Bg			
 	call drawGameState
 	mov [redraw], 0
 
