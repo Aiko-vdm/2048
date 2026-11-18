@@ -291,19 +291,58 @@ PROC drawScore
 	
 	; draw score label
 	call setDrawCursor, 0, 1
-	mov esi, offset scoreLabel
-	@@printLabel:
-	movzx eax, [byte ptr esi] ; eax = current char
-	test eax, eax ; test if it's concluding 0
-	jz @@number
-	call printChar, eax
-	inc esi
-	jmp @@printLabel
+	call printString, offset scoreLabel
 	
 	; draw score value
-	@@number:
-	call setDrawCursor, 0, 2
-	mov eax, [score] ; eax = score (number)
+	call printNumber, [score]
+	
+	ret	
+ENDP drawScore
+
+PROC fillRect
+	; draws rectangle in video memory with color
+	ARG @@x:dword, @@y:dword, @@w:dword, @@h:dword, @@color:byte
+	USES eax, ebx, ecx, edi
+	
+	mov eax, [@@y]
+	imul eax, SCRWIDTH
+	add eax, [@@x]
+	lea edi, [VMEMADR + eax]
+	mov al, [@@color]
+	mov ebx, [@@h]
+	@@line:
+	mov ecx, [@@w]
+	rep stosb
+	add edi, SCRWIDTH
+	sub edi, [@@w]
+	dec ebx
+	jnz @@line
+	ret
+ENDP fillRect
+
+PROC printString
+	; prints a 0-terminated string at cursor position
+	ARG @@str:dword
+	USES eax, esi
+
+	mov esi, [@@str]
+	@@printString:
+	movzx eax, [byte ptr esi] ; eax = current char
+	test eax, eax ; test if it's concluding 0
+	jz @@done
+	call printChar, eax
+	inc esi
+	jmp @@printString
+	@@done:
+	ret
+ENDP printString
+
+PROC printNumber
+	; prints number in decimal at cursor position
+	ARG @@n:dword
+	USES eax, ebx, ecx, edx
+	
+	mov eax, [@@n] ; eax = number
 	mov ebx, 10 ; divisor 10, to separate digit by digit
 	xor ecx, ecx
 	@@printDigits:
@@ -319,9 +358,9 @@ PROC drawScore
 	add edx, '0' ; convert digit to character
 	call printChar, edx ; print digit character
 	loop @@printStack
-	
-	ret	
-ENDP drawScore
+	ret
+ENDP printNumber
+
 
 PROC handleInput
 	; checks each frame if a new arrow key has been pressed and stores result in variable
