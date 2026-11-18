@@ -31,6 +31,9 @@ BOARDLENGTHLOGIC EQU 4
 BOARDWIDTHLOGIC EQU 4
 BOARDSIZELOGIC EQU BOARDLENGTHLOGIC*BOARDWIDTHLOGIC
 
+CENTERX EQU (SCRWIDTH-BIGSPRITEWIDTH)/2
+CENTERY EQU (SCRHEIGHT-BIGSPRITEHEIGHT)/2
+
 KEY_ESC   EQU 01h
 KEY_UP    EQU 48h
 KEY_DOWN  EQU 50h
@@ -115,6 +118,7 @@ PROC drawGameState
 
 	ret
 endp drawGameState
+
 PROC Centerx
 	; returns the x coordinate where the corner of the background should be so its centerd
 	arg @@width: dword
@@ -124,6 +128,7 @@ PROC Centerx
 	shr eax, 1
 	ret
 endp Centerx
+
 PROC Centery
 	; returns the y coordinate where the corner of the background should be so its centerd
 	arg @@height: dword
@@ -135,24 +140,36 @@ PROC Centery
 endp Centery
 
 PROC drawInit
-	arg 	@@sprite: dword,@@file: dword,@@datasize: dword, @@centerx: dword, @@centery: dword
+	arg 	@@sprite: dword,@@file: dword,@@datasize: dword, @@width: dword, @@height: dword
 	; draws the background
     USES eax, ebx, ecx, edx
     mov eax,[@@sprite]
 	add eax, 8
 	call ReadFile, [@@file], eax, [@@datasize]
-	call drawSprite, offset [@@sprite], VMEMADR, call centerx [@@centerx], call centery [@@centery]
+
+	mov ebx, SCRWIDTH
+	sub ebx, [@@width]
+	shr ebx, 1						
+
+	mov ecx, SCRHEIGHT
+	sub ecx, [@@height]
+	shr ecx, 1	
+	call drawSprite, [@@sprite], VMEMADR, ebx, ecx
+	;call drawSprite, offset [@@sprite], VMEMADR, call centerx [@@centerx], call centery [@@centery]
 
     ret
 endp drawInit
+
 PROC draw4Bg
 	call drawInit, offset BigSprite, offset FilledBackground_file, BIGDATASIZE, BIGSPRITEWIDTH, BIGSPRITEHEIGHT
 	ret
 endp draw4Bg
+
 PROC draw3Bg
 	call drawInit, offset ThreeSprite, offset ThreeBackground_file, THREESPRITEDATASIZE, THREESPRITEWIDTH, THREESPRITEHEIGHT
 	ret
 endp draw3Bg
+
 PROC draw5Bg
 	call drawInit, offset FiveSprite, offset FiveBackground_file, FIVESPRITEDATASIZE, FIVESPRITEWIDTH, FIVESPRITEHEIGHT
 	ret
