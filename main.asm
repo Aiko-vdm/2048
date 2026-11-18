@@ -39,11 +39,13 @@ KEY_UP    EQU 48h
 KEY_DOWN  EQU 50h
 KEY_LEFT  EQU 4Bh
 KEY_RIGHT EQU 4Dh
+KEY_ENTER EQU 1Ch
 DIRECTION_NONE  EQU 0
 DIRECTION_UP    EQU 1
 DIRECTION_DOWN  EQU 2
 DIRECTION_LEFT  EQU 3
 DIRECTION_RIGHT EQU 4
+DIRECTION_ENTER EQU 5
 
 STATE_PLAYING EQU 0
 STATE_WON     EQU 1
@@ -53,6 +55,9 @@ SCOREAREAY    EQU 8		; y coordinate of the score area
 SCOREAREAH    EQU 16	; height in pixels
 SCOREAREAW    EQU 72	; width in pixels
 SCORECOLOR    EQU 15	; white
+
+SELECTED_COLOR EQU 4 ; red
+IDLE_COLOR EQU 8 ; grey
 ; -------------------------------------------------------------------
 ; CODE
 ; -------------------------------------------------------------------
@@ -294,6 +299,7 @@ PROC drawScore
 	call printString, offset scoreLabel
 	
 	; draw score value
+	call setDrawCursor, 0, 2
 	call printNumber, [score]
 	
 	ret	
@@ -361,6 +367,92 @@ PROC printNumber
 	ret
 ENDP printNumber
 
+PROC drawGameOver
+	; draws screen with game over, buttons try again and exit, selected button is red
+	uses eax
+	
+	call fillRect, 0, 0, SCRWIDTH, SCRHEIGHT, 0 ; make whole screen black
+	
+	call setDrawCursor, 15, 4 ; centered
+	call printString, offset txtGameOver
+	call setDrawCursor, 14, 7
+	call printString, offset txtFinalScore
+	call setDrawCursor, 14, 8
+	call printNumber, [score]
+	
+	; button "TRY AGAIN"
+	mov al, IDLE_COLOR
+	cmp [GameOverMenuSelected], 0
+	jne @@button1
+	mov al, SELECTED_COLOR
+	@@button1:
+	call fillRect, 112, 92, 96, 16, eax 
+	call setDrawCursor, 15, 12 
+	call printString, offset txtTryAgain
+	
+	; button "EXIT"
+	mov al, IDLE_COLOR
+	cmp [GameOverMenuSelected], 1
+	jne @@button2
+	mov al, SELECTED_COLOR
+	@@button2:
+	call fillRect, 112, 92, 96, 16, eax
+	call setDrawCursor, 18, 15
+	call printString, offset txtExit
+
+	call setDrawCursor, 12, 20
+	call printString, offset txtControls
+	ret
+ENDP drawGameOver
+
+PROC updateGameOverMenu
+	; handles menu 
+	USES eax
+	
+	movzx eax, [direction] ; input 
+	cmp eax, DIRECTION_UP
+	je @@switch
+	cmp eax, DIRECTION_DOWN
+	je @@switch ; up or down both just switch selected button
+	cmp eax, DIRECTION_ENTER
+	je @@confirm
+	jmp @@done
+	
+	@@switch:
+	xor [GameOverMenuSelected], 1	; switch 0 to 1 or 1 to 0
+	mov [redraw], 1 	; the color changed: redraw
+	jmp @@done
+	
+	@@confirm:
+	cmp [GameOverMenuSelected], 0
+	jne short @@exit
+	call resetGame	; Try again confirmed, game restarts
+	jmp @@done
+	@@exit:
+	mov [quit], 1
+	
+	@@done:
+	ret
+ENDP updateGameOverMenu
+
+PROC resetGame
+	; starts new game
+	USES eax, ecx, edi
+	
+	mov edi, offset board 
+	mov ecx, BOARDSIZELOGIC * SIZE tile
+	xor al, al 
+	rep stosb
+	mov [score], 0
+	mov [gameState], STATE_PLAYING
+	mov [GameOverMenuSelected], 0
+	call fillRect, 0, 0, SCRWIDTH, SCRHEIGHT, 0 
+	call SpawnTile, 2   
+	mov [redraw], 1 
+	ret
+ENDP resetGame
+
+
 
 PROC handleInput
 	; checks each frame if a new arrow key has been pressed and stores result in variable
@@ -382,7 +474,7 @@ PROC handleInput
 
 	@@next:
 	inc ecx
-	cmp ecx, 4
+	cmp ecx, 5
 	jb @@keyLoop
 	
 	cmp [__keyb_keyboardState + KEY_ESC], 0
@@ -613,11 +705,32 @@ PROC main
 	call handleInput
 	call UpdateGameState
 	
+	cmp [gameState], STATE_PLAYING
+	jne @@notPlaying
+	call checkGameState
+	mov [gameState], al
+	cmp al, STATE_PLAYING
+	je @@draw
+	mov [redraw], 1
+	jmp short @@draw
+
+	@@notPlaying: 
+	cmp [gameState], STATE_LOST
+	jne short @@draw
+	call updateGameOverMenu
+
+	@@draw:
 	cmp [redraw], 0
 	je @@noDraw
+	cmp [gameState], STATE_LOST
+	je @@drawGameOver
 	call draw4Bg			
 	call drawGameState
 	call drawScore
+	jmp @@drawn
+	@@drawGameOver:
+	call drawGameOver
+	@@drawn: 
 	mov [redraw], 0
 
 	@@noDraw:
@@ -667,8 +780,8 @@ DB THREESPRITEDATASIZE DUP(0)
 FiveSprite DD FIVESPRITEWIDTH, FIVESPRITEHEIGHT
 DB FIVESPRITEDATASIZE DUP(0)
 
-keyTable  db KEY_UP, KEY_DOWN, KEY_LEFT, KEY_RIGHT   ; index + 1 = DIRECTION_xxx
-prevState db 4 dup(0)
+keyTable  db KEY_UP, KEY_DOWN, KEY_LEFT, KEY_RIGHT, KEY_ENTER   ; index + 1 = DIRECTION_xxx
+prevState db 5 dup(0)
 direction db DIRECTION_NONE
 quit      db 0
 gameState db STATE_PLAYING
@@ -679,6 +792,14 @@ redraw  db 1			; 1 so that the board is drawn at the start of the game
 
 score      dd 0	; score value, stored as a dword to allow for large scores
 scoreLabel db "SCORE", 0 ; label to display above the score value
+
+GameOverMenuSelected db 0 ; 0 = try again selected, 1 = exit selected
+txtGameOver db "GAME OVER", 0
+txtFinalScore db "FINAL SCORE", 0
+txtTryAgain db "TRY AGAIN", 0
+txtExit db "EXIT", 0
+txtControls db "ARROW UP/DOWN + ENTER", 0
+
 
 iconTable dd offset OneCell_file, offset TwoCell_file, offset ThreeCell_file
           dd offset FourCell_file, offset FiveCell_file, offset SixCell_file
