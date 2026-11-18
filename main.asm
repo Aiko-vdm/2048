@@ -18,12 +18,13 @@ SMALLSPRITEHEIGHT EQU 32
 SMALLDATASIZE EQU SMALLSPRITEWIDTH*SMALLSPRITEHEIGHT
 DISTANCEBETWEENCELLS EQU 5
 BORDER EQU 16
-3SPRITEWIDTH EQU 134
-3SPRITEHEIGHT EQU 134
-5SPRITEWIDTH EQU 212
-5SPRITEHEIGHT EQU 200
+THREESPRITEWIDTH EQU 134
+THREESPRITEHEIGHT EQU 134
+THREESPRITEDATASIZE EQU THREESPRITEWIDTH*THREESPRITEHEIGHT
+FIVESPRITEWIDTH EQU 212
+FIVESPRITEHEIGHT EQU 200
+FIVESPRITEDATASIZE EQU FIVESPRITEWIDTH*FIVESPRITEHEIGHT
 
-RANDOMIZEATTEMPTS EQU BOARDSIZELOGIC*10
 FOURCHANCE EQU 5 ; 5% chance to spawn a 4
 
 BOARDLENGTHLOGIC EQU 4
@@ -149,11 +150,11 @@ PROC draw4Bg
 	ret
 endp draw4Bg
 PROC draw3Bg
-	call drawInit, offset 3Sprite, offset 3Background_file, 3SPRITEDATASIZE, 3SPRITEWIDTH, 3SPRITEHEIGHT
+	call drawInit, offset ThreeSprite, offset ThreeBackground_file, THREESPRITEDATASIZE, THREESPRITEWIDTH, THREESPRITEHEIGHT
 	ret
 endp draw3Bg
 PROC draw5Bg
-	call drawInit, offset 5Sprite, offset 5Background_file, 5SPRITEDATASIZE, 5SPRITEWIDTH, 5SPRITEHEIGHT
+	call drawInit, offset FiveSprite, offset FiveBackground_file, FIVESPRITEDATASIZE, FIVESPRITEWIDTH, FIVESPRITEHEIGHT
 	ret
 endp draw5Bg
 
@@ -289,7 +290,7 @@ PROC checkGameState
 	
 	@@noRight:
 	cmp edx, BOARDLENGTHLOGIC-1
-	jea @@noDown	; if the tile is on the bottom edge, don't check down neighbor
+	jae @@noDown	; if the tile is on the bottom edge, don't check down neighbor
 	lea edi, [esi + BOARDWIDTHLOGIC*SIZE tile] ; edi = address of the down neighbor
 	cmp al,[(tile ptr edi).value]
 	je short @@playing	; again, if the down neighbor has the same value, you can still merge
@@ -508,17 +509,17 @@ SeventeenCell_file db "assets/131kCell.bin", 0
 Background_file db "assets/Bg.bin", 0
 EmptyCell_file db "assets/ECell.bin", 0
 FilledBackground_file db "assets/FBg.bin", 0
-3Background_file db "assets/3BG.bin", 0
-5Background_file db "assets/5BG.bin", 0
+ThreeBackground_file db "assets/3BG.bin", 0
+FiveBackground_file db "assets/5BG.bin", 0
 
 BigSprite DD BIGSPRITEWIDTH, BIGSPRITEHEIGHT
 DB BIGDATASIZE DUP(0)
 SmallSprite DD SMALLSPRITEWIDTH, SMALLSPRITEHEIGHT
 DB SMALLDATASIZE DUP(0)
-3Sprite DD 3SPRITEWIDTH, 3SPRITEHEIGHT
-DB 3SPRITEDATASIZE DUP(0)
-5Sprite DD 5SPRITEWIDTH, 5SPRITEHEIGHT
-DB 5SPRITEDATASIZE DUP(0)
+ThreeSprite DD THREESPRITEWIDTH, THREESPRITEHEIGHT
+DB THREESPRITEDATASIZE DUP(0)
+FiveSprite DD FIVESPRITEWIDTH, FIVESPRITEHEIGHT
+DB FIVESPRITEDATASIZE DUP(0)
 
 keyTable  db KEY_UP, KEY_DOWN, KEY_LEFT, KEY_RIGHT   ; index + 1 = DIRECTION_xxx
 prevState db 4 dup(0)
