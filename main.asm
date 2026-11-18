@@ -48,6 +48,11 @@ DIRECTION_RIGHT EQU 4
 STATE_PLAYING EQU 0
 STATE_WON     EQU 1
 STATE_LOST    EQU 2
+
+SCOREAREAY    EQU 8		; y coordinate of the score area
+SCOREAREAH    EQU 16	; height in pixels
+SCOREAREAW    EQU 72	; width in pixels
+SCORECOLOR    EQU 15	; white
 ; -------------------------------------------------------------------
 ; CODE
 ; -------------------------------------------------------------------
@@ -243,6 +248,81 @@ Proc SpawnTile
 	ret
 Endp SpawnTile
 
+PROC setDrawCursor
+	; sets the cursor position for drawing at text column @@col and row @@row (8x8 pixels per character)
+	ARG @@col:byte, @@row:byte
+	USES eax, ebx, edx
+	
+	mov dl, [@@col]
+	mov dh, [@@row]
+	xor bh, bh
+	mov ah, 2
+	int 10h
+	ret
+ENDP setDrawCursor
+
+PROC printChar
+	; prints a character at the current cursor position and moves the cursor to the next position
+	ARG @@char:byte
+	USES eax, ebx, ecx, edx
+	
+	mov al, [@@char]
+	mov ah, 0Eh
+	xor bh, bh
+	mov bl, SCORECOLOR
+	int 10h
+	ret
+ENDP printChar
+
+PROC drawScore
+	; erases the previous score and draws the current score at the top of the screen ("SCORE" label and score value)
+	USES eax, ebx, ecx, edx, esi, edi
+	
+	;erasing previous score
+	mov edi, VMEMADR  + SCOREAREAY*SCRWIDTH
+	mov ebx, SCOREAREAH
+	xor eax, eax
+	@@eraseLoop:
+	mov ecx, SCOREAREAW
+	rep stosb
+	add edi, SCRWIDTH - SCOREAREAW
+	dec ebx
+	jnz @@eraseLoop
+	
+	; draw score label
+	call setDrawCursor, 0, 1
+	mov esi, offset scoreLabel
+	@@printLabel:
+	movzx eax, [byte ptr esi]
+	test eax, eax
+	jz @@number
+	call printChar, eax
+	inc esi
+	jmp @@printLabel
+	
+	; draw score value
+	@@number:
+	call setDrawCursor, 0, 2
+	mov eax, [score]
+	mov ebx, 10
+	xor ecx, ecx
+	@@printDigits:
+	xor edx, edx
+	div ebx
+	push edx
+	inc ecx
+	test eax, eax
+	jnz @@printDigits 
+	
+	@@printStack:
+	pop edx ; retrieve digit from stack
+	add edx, '0' ; convert digit to character
+	call printChar, edx ; print digit character
+	loop @@printStack
+	
+	ret	
+ENDP drawScore
+
 PROC handleInput
 	; checks each frame if a new arrow key has been pressed and stores result in variable
 	USES eax, ebx, ecx, edx
@@ -402,6 +482,14 @@ PROC higherSlide
 	add edi, [@@step] ; merge
 	inc [byte ptr tempRow + edi] ; edi points to the next free tile, last placed tile is at edi + step (towards the wall)
 	sub edi, [@@step]
+	
+	push ecx	; store the read position on the stack to restore it later
+	lea ecx, [eax + 1] ; cl = exponent of the tile to place (value + 1)
+	mov eax, 1
+	shl eax, cl ; eax = 2^(value+1)
+	add [score], eax ; add to score
+	pop ecx
+
 	xor edx, edx ; reset last value: can't merge twice 
 	jmp @@nextScan
 	
@@ -480,6 +568,7 @@ PROC main
     call draw4Bg
 	call SpawnTile, 2
 	call drawGameState
+	call drawScore
     @@gameLoop:
     CALL wait_VBLANK, 1
 	call handleInput
@@ -489,6 +578,7 @@ PROC main
 	je @@noDraw
 	call draw4Bg			
 	call drawGameState
+	call drawScore
 	mov [redraw], 0
 
 	@@noDraw:
@@ -546,7 +636,10 @@ gameState db STATE_PLAYING
 
 tempRow  db 4 dup(0)
 moved   db 0
-redraw  db 1			; 1 zodat het begin getekend wordt
+redraw  db 1			; 1 so that the board is drawn at the start of the game
+
+score      dd 0
+scoreLabel db "SCORE", 0
 
 iconTable dd offset OneCell_file, offset TwoCell_file, offset ThreeCell_file
           dd offset FourCell_file, offset FiveCell_file, offset SixCell_file
