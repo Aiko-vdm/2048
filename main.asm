@@ -256,8 +256,8 @@ PROC setDrawCursor
 	mov dl, [@@col]
 	mov dh, [@@row]
 	xor bh, bh
-	mov ah, 2
-	int 10h
+	mov ah, 2 ; function 02h: set cursor position
+	int 10h ; calls function in ah
 	ret
 ENDP setDrawCursor
 
@@ -267,7 +267,7 @@ PROC printChar
 	USES eax, ebx, ecx, edx
 	
 	mov al, [@@char]
-	mov ah, 0Eh
+	mov ah, 0Eh ; function 0Eh: display char and move cursor
 	xor bh, bh
 	mov bl, SCORECOLOR
 	int 10h
@@ -279,13 +279,13 @@ PROC drawScore
 	USES eax, ebx, ecx, edx, esi, edi
 	
 	;erasing previous score
-	mov edi, VMEMADR  + SCOREAREAY*SCRWIDTH
-	mov ebx, SCOREAREAH
-	xor eax, eax
+	mov edi, VMEMADR  + SCOREAREAY*SCRWIDTH ; address of first pixel of score area
+	mov ebx, SCOREAREAH	; number of pixel rows to delete
+	xor eax, eax	; 0 = black
 	@@eraseLoop:
-	mov ecx, SCOREAREAW
-	rep stosb
-	add edi, SCRWIDTH - SCOREAREAW
+	mov ecx, SCOREAREAW ; number of pixels per row
+	rep stosb ; write al to [edi], move edi, repeat ecx times
+	add edi, SCRWIDTH - SCOREAREAW ; edi to beginning of next pixel row
 	dec ebx
 	jnz @@eraseLoop
 	
@@ -293,8 +293,8 @@ PROC drawScore
 	call setDrawCursor, 0, 1
 	mov esi, offset scoreLabel
 	@@printLabel:
-	movzx eax, [byte ptr esi]
-	test eax, eax
+	movzx eax, [byte ptr esi] ; eax = current char
+	test eax, eax ; test if it's concluding 0
 	jz @@number
 	call printChar, eax
 	inc esi
@@ -303,15 +303,15 @@ PROC drawScore
 	; draw score value
 	@@number:
 	call setDrawCursor, 0, 2
-	mov eax, [score]
-	mov ebx, 10
+	mov eax, [score] ; eax = score (number)
+	mov ebx, 10 ; divisor 10, to separate digit by digit
 	xor ecx, ecx
 	@@printDigits:
 	xor edx, edx
-	div ebx
-	push edx
+	div ebx ; eax = eax / 10 (quotient), edx = remainder (last digit)
+	push edx ; push number onto the stack (popped later in reverse order)
 	inc ecx
-	test eax, eax
+	test eax, eax ; if quotient 0, all digits are split off
 	jnz @@printDigits 
 	
 	@@printStack:
@@ -481,14 +481,14 @@ PROC higherSlide
 	jne @@place
 	add edi, [@@step] ; merge
 	inc [byte ptr tempRow + edi] ; edi points to the next free tile, last placed tile is at edi + step (towards the wall)
-	sub edi, [@@step]
+	sub edi, [@@step] ; move edi back to the last placed tile (towards the wall)
 	
 	push ecx	; store the read position on the stack to restore it later
 	lea ecx, [eax + 1] ; cl = exponent of the tile to place (value + 1)
-	mov eax, 1
-	shl eax, cl ; eax = 2^(value+1)
+	mov eax, 1 ; initial value 1 (2^0)
+	shl eax, cl ; eax = 1 << (value + 1) = 2^(value+1),
 	add [score], eax ; add to score
-	pop ecx
+	pop ecx	; restore read position
 
 	xor edx, edx ; reset last value: can't merge twice 
 	jmp @@nextScan
@@ -638,8 +638,8 @@ tempRow  db 4 dup(0)
 moved   db 0
 redraw  db 1			; 1 so that the board is drawn at the start of the game
 
-score      dd 0
-scoreLabel db "SCORE", 0
+score      dd 0	; score value, stored as a dword to allow for large scores
+scoreLabel db "SCORE", 0 ; label to display above the score value
 
 iconTable dd offset OneCell_file, offset TwoCell_file, offset ThreeCell_file
           dd offset FourCell_file, offset FiveCell_file, offset SixCell_file
