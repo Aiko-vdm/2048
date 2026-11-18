@@ -396,7 +396,7 @@ PROC drawGameOver
 	jne @@button2
 	mov al, SELECTED_COLOR
 	@@button2:
-	call fillRect, 112, 92, 96, 16, eax
+	call fillRect, 112, 116, 96, 16, eax 
 	call setDrawCursor, 18, 15
 	call printString, offset txtExit
 
