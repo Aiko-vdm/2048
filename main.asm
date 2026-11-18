@@ -47,6 +47,8 @@ DIRECTION_LEFT  EQU 3
 DIRECTION_RIGHT EQU 4
 DIRECTION_ENTER EQU 5
 
+WINVALUE EQU 11
+
 STATE_PLAYING EQU 0
 STATE_WON     EQU 1
 STATE_LOST    EQU 2
@@ -367,8 +369,24 @@ PROC printNumber
 	ret
 ENDP printNumber
 
+PROC drawButton
+	; draws button (rectangle, red if selected, grey if not, with text on top)
+	ARG @@y:dword, @@col:dword, @@row:dword, @@text:dword, @@selected:dword
+	USES eax
+
+	mov eax, IDLE_COLOR                 ; assume not selected
+	cmp [@@selected], 0
+	je short @@draw
+	mov eax, SELECTED_COLOR             ; selected: red
+	@@draw:
+	call fillRect, 112, [@@y], 96, 16, eax      ; rectangle first
+	call setDrawCursor, [@@col], [@@row]        ; then the text on top of it
+	call printString, [@@text]
+	ret
+ENDP drawButton
+
 PROC drawGameOver
-	; draws screen with game over, buttons try again and exit, selected button is red
+	; draws game over screen with buttons "TRY AGAIN" and "EXIT"
 	uses eax
 	
 	call fillRect, 0, 0, SCRWIDTH, SCRHEIGHT, 0 ; make whole screen black
@@ -381,32 +399,54 @@ PROC drawGameOver
 	call printNumber, [score]
 	
 	; button "TRY AGAIN"
-	mov al, IDLE_COLOR
-	cmp [GameOverMenuSelected], 0
-	jne @@button1
-	mov al, SELECTED_COLOR
-	@@button1:
-	call fillRect, 112, 92, 96, 16, eax 
-	call setDrawCursor, 15, 12 
-	call printString, offset txtTryAgain
+	xor eax, eax
+	cmp [MenuSelected], 0
+	sete al
+	call drawButton, 92, 15, 12, offset txtTryAgain, eax
 	
 	; button "EXIT"
 	mov al, IDLE_COLOR
-	cmp [GameOverMenuSelected], 1
+	cmp [MenuSelected], 1
 	jne @@button2
 	mov al, SELECTED_COLOR
 	@@button2:
-	call fillRect, 112, 116, 96, 16, eax 
-	call setDrawCursor, 18, 15
-	call printString, offset txtExit
-
-	call setDrawCursor, 12, 20
-	call printString, offset txtControls
+	xor eax, eax
+	cmp [MenuSelected], 1
+	sete al
+	call drawButton, 116, 18, 15, offset txtExit, eax
 	ret
 ENDP drawGameOver
 
+PROC drawWin
+	; draws screen with game over, buttons try again and exit
+	call fillRect, 0, 0, SCRWIDTH, SCRHEIGHT, 0 ; make whole screen black
+
+	call setDrawCursor, 16, 4
+	call printString, offset txtYouWin
+	call setDrawCursor, 15, 7
+	call printString, offset txtYourScore
+	call setDrawCursor, 15, 8
+	call printNumber, [score]
+	
+	; button "KEEP PLAYING"
+	xor eax, eax                        ; changes the flags
+	cmp [MenuSelected], 0
+	sete al                             ; al = 1 if equal (selected), else 0
+	call drawButton, 92, 14, 12, offset txtKeepPlaying, eax
+	
+	;button "EXIT"
+	xor eax, eax
+	cmp [MenuSelected], 1
+	sete al
+	call drawButton, 116, 18, 15, offset txtExit, eax
+	
+	call setDrawCursor, 12, 20
+	call printString, offset txtControls
+	ret
+ENDP drawWin
+
 PROC updateGameOverMenu
-	; handles menu 
+	; handles Game Over menu 
 	USES eax
 	
 	movzx eax, [direction] ; input 
@@ -419,12 +459,12 @@ PROC updateGameOverMenu
 	jmp @@done
 	
 	@@switch:
-	xor [GameOverMenuSelected], 1	; switch 0 to 1 or 1 to 0
+	xor [MenuSelected], 1	; switch 0 to 1 or 1 to 0
 	mov [redraw], 1 	; the color changed: redraw
 	jmp @@done
 	
 	@@confirm:
-	cmp [GameOverMenuSelected], 0
+	cmp [MenuSelected], 0
 	jne short @@exit
 	call resetGame	; Try again confirmed, game restarts
 	jmp @@done
@@ -434,6 +474,41 @@ PROC updateGameOverMenu
 	@@done:
 	ret
 ENDP updateGameOverMenu
+
+PROC updateWinMenu
+	; handles win menu
+	USES eax
+
+	movzx eax, [direction]              ; the input of this frame
+	cmp eax, DIRECTION_UP
+	je short @@switch
+	cmp eax, DIRECTION_DOWN
+	je short @@switch                   ; up and down both switch the selected button
+	cmp eax, DIRECTION_ENTER
+	je short @@confirm
+	jmp short @@done                    ; any other key: nothing
+
+	@@switch:
+	xor [MenuSelected], 1       ; switch 0 to 1 or 1 to 0
+	mov [redraw], 1                     ; the color changed: redraw
+	jmp short @@done
+
+	@@confirm:
+	cmp [MenuSelected], 0
+	jne short @@exit
+	; KEEP PLAYING
+	mov [hasWon], 1                     ; don't detect the 2048 tile as a win again
+	mov [gameState], STATE_PLAYING      ; the game continues
+	mov [MenuSelected], 0       ; reset the menu for next time
+	call fillRect, 0, 0, SCRWIDTH, SCRHEIGHT, 0     ; remove the win screen text
+	mov [redraw], 1                     ; main draws board and score again
+	jmp short @@done
+	@@exit:
+	mov [quit], 1                       ; EXIT: the main loop ends
+
+	@@done:
+	ret
+ENDP updateWinMenu
 
 PROC resetGame
 	; starts new game
@@ -445,10 +520,11 @@ PROC resetGame
 	rep stosb
 	mov [score], 0
 	mov [gameState], STATE_PLAYING
-	mov [GameOverMenuSelected], 0
+	mov [MenuSelected], 0
 	call fillRect, 0, 0, SCRWIDTH, SCRHEIGHT, 0 
 	call SpawnTile, 2   
 	mov [redraw], 1 
+	mov [hasWon], 0
 	ret
 ENDP resetGame
 
@@ -491,16 +567,20 @@ PROC checkGameState
 	; returns STATE_WON, STATE_LOST or STATE_PLAYING in eax
 	USES ebx, ecx, edx, esi, edi
 	
+	cmp [hasWon], 0
+	jne @@moves ; already won earlier: skip the win check
+
 	; loop over all tiles to check if any tile has value 2048 (exponent 11)
 	mov esi, offset board
 	mov ecx, BOARDSIZELOGIC
 	@@winLoop:
-	cmp [(tile ptr esi).value], 11 
+	cmp [(tile ptr esi).value], WINVALUE
 	je @@won
 	add esi, SIZE tile
 	loop @@winLoop
 	
 	; check if any move is possible (if any tile has a neighbor with the same value)
+	@@moves:
 	mov esi, offset board 	; esi = address of the current tile
 	xor edx, edx			; edx = y
 	@@row:
@@ -547,6 +627,9 @@ PROC UpdateGameState
 	; updates the game state based on the current direction of movement. 
 	; if a move was made, it spawns a new tile and sets the redraw flag.
 	USES eax
+
+	cmp [gameState], STATE_PLAYING
+	jne @@done ; game over or won: ignore moves
 
 	cmp [direction], DIRECTION_RIGHT
 	je @@right
@@ -716,7 +799,12 @@ PROC main
 
 	@@notPlaying: 
 	cmp [gameState], STATE_LOST
-	jne short @@draw
+	je @@lostMenu
+	cmp [gameState], STATE_WON
+	jne @@draw
+	call updateWinMenu
+	jmp @@draw 
+	@@lostMenu:
 	call updateGameOverMenu
 
 	@@draw:
@@ -724,12 +812,17 @@ PROC main
 	je @@noDraw
 	cmp [gameState], STATE_LOST
 	je @@drawGameOver
+	cmp [gameState], STATE_WON
+	je @@drawWin
 	call draw4Bg			
 	call drawGameState
 	call drawScore
 	jmp @@drawn
 	@@drawGameOver:
 	call drawGameOver
+	jmp @@drawn
+	@@drawWin:
+	call drawWin
 	@@drawn: 
 	mov [redraw], 0
 
@@ -793,13 +886,17 @@ redraw  db 1			; 1 so that the board is drawn at the start of the game
 score      dd 0	; score value, stored as a dword to allow for large scores
 scoreLabel db "SCORE", 0 ; label to display above the score value
 
-GameOverMenuSelected db 0 ; 0 = try again selected, 1 = exit selected
+MenuSelected db 0 ; 
 txtGameOver db "GAME OVER", 0
 txtFinalScore db "FINAL SCORE", 0
 txtTryAgain db "TRY AGAIN", 0
 txtExit db "EXIT", 0
 txtControls db "ARROW UP/DOWN + ENTER", 0
 
+hasWon          db 0                ; 1 = player already won and chose to keep playing
+txtYouWin       db "YOU WIN", 0
+txtYourScore    db "YOUR SCORE", 0
+txtKeepPlaying  db "KEEP PLAYING", 0
 
 iconTable dd offset OneCell_file, offset TwoCell_file, offset ThreeCell_file
           dd offset FourCell_file, offset FiveCell_file, offset SixCell_file
